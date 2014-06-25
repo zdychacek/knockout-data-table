@@ -101,20 +101,27 @@ connector.on('remote', function (sklikApi) {
     ko.getObservable(this, 'itemsPerPage').subscribe(function (newValue) {
       this.setPage();
     }.bind(this));
-
-    ko.getObservable(this, 'columnsConfig').subscribe(function (newConfig) {
-      this.reorderTemplate(newConfig);
-    }.bind(this));
   }
 
   TableViewModel.prototype.sortColumns = function () {
-    // pred preskladanim sloupcu oriznu mnozni dat
+    this.isRendered = false;
+
+    // pred preskladanim sloupcu oriznu mnozinu dat
     var temp = this.itemsBuffer.slice(0, this.lazyRenderingInitialCount);
     this.items = this.itemsBuffer.slice(this.lazyRenderingInitialCount, this.itemsBuffer.length - 1);
     this.itemsBuffer = temp;
 
     this.columnsConfig = this.tempColumnsConfig;
     this.tempColumnsConfig = clone(this.tempColumnsConfig);
+
+    this.reorderTemplate(this.columnsConfig);
+
+    // force rerenderingu
+    ko.getObservable(this, 'itemsBuffer').refresh();
+
+    if (!this.lazyRendering) {
+      this.isRendered = true;
+    }
 
     // po preskladani dorenderuji zbytek
     this.renderBatch();
@@ -135,14 +142,6 @@ connector.on('remote', function (sklikApi) {
     }, this);
 
     this.rowTemplateCnt.innerHTML = '<tr>' + dest.innerHTML + '</tr>';
-
-    var itemsObservable = ko.getObservable(this, 'items');
-
-    setTimeout(function() {
-      console.time('Preskladani sloupcu');
-      itemsObservable.refresh();
-      console.timeEnd('Preskladani sloupcu');
-    }, 0);
   }
 
   TableViewModel.prototype.getRangeForPage = function (page) {
