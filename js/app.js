@@ -6,9 +6,26 @@ connector.on('remote', function (sklikApi) {
     DESC: 'SORT_DESC'
   };
 
-  function TableViewModel (rowTemplateId, columnsConfig) {
+  TableViewModel.defaults = {
+    lazyRendering: false,
+    lazyRenderingBatchSize: 10,
+    lazyRenderingBatchDelay: 25,
+    lazyRenderingInitialCount: 40
+  };
+
+  function TableViewModel (config) {
+    if (!config) {
+      throw new Error('Missing configuration data.');
+    }
+
+    // vychozi nastaveni
+    var defaults = TableViewModel.defaults;
+
     // pole nactenych dat pro jednu stranku
     this.items = [];
+
+    // pole zaznamu, ktere zobrazujeme
+    this.itemsBuffer = [];
 
     // celkovy pocet zaznamu
     this.totalCount = 0;
@@ -17,7 +34,7 @@ connector.on('remote', function (sklikApi) {
     this.itemsPerCountList = [ 10, 20, 50, 100, 200, 500, 800, 1000];
 
     // aktualne na stranku
-    this.itemsPerPage = 200;
+    this.itemsPerPage = 500;
 
     // cislo aktualni stranky
     this.currentPage = 1;
@@ -32,22 +49,43 @@ connector.on('remote', function (sklikApi) {
     this.direction = Direction.ASC;
 
     // kongigurace sloupcu
-    this.columnsConfig = columnsConfig;
+    this.columnsConfig = config.columnsConfig;
 
     // docasna konfigurace
-    this.tempColumnsConfig = clone(columnsConfig);
+    this.tempColumnsConfig = clone(this.columnsConfig);
+
+    // priznak, zda je tabulka jiz cela dorenderovana
+    this.isRendered = false;
+
+    // priznak, zda jsou jiz nactena vsechna data
+    this.isDataLoaded = false;
 
     // trackuj tento viewmodel
     ko.track(this);
 
     // id sablony pro jeden radek
-    this.rowTemplateId = rowTemplateId;
+    this.rowTemplateId = config.rowTemplateId;
 
     // kontejner pro sablonu (script tag)
-    this.rowTemplateCnt = document.getElementById(rowTemplateId);
+    this.rowTemplateCnt = document.getElementById(this.rowTemplateId);
 
     // text sablony
     this.originalRowTemplate = this.rowTemplateCnt.innerHTML;
+
+    // ----------- LAZY RENDERING STUFF
+    
+    // mae zapnuty lazyloading?
+    this.lazyRendering = config.lazyRendering || defaults.lazyRendering;
+
+    // pocet radku vykreslovanych v ramci jedne davky
+    this.lazyRenderingBatchSize = config.lazyRenderingBatchSize || defaults.lazyRenderingBatchSize;
+
+    // prodlevy pred vykreslenim dalsi davky
+    this.lazyRenderingBatchDelay = typeof config.lazyRenderingBatchDelay !== 'undefined'?
+      config.lazyRenderingBatchDelay : defaults.lazyRenderingBatchDelay;
+
+    // pocet radku vyrendrovanych na prvni dobrou
+    this.lazyRenderingInitialCount = config.lazyRenderingInitialCount || defaults.lazyRenderingInitialCount;
 
     // naveseni posluchacu
     this.attachSubscriptions();
@@ -70,8 +108,16 @@ connector.on('remote', function (sklikApi) {
   }
 
   TableViewModel.prototype.sortColumns = function () {
+    // pred preskladanim sloupcu oriznu mnozni dat
+    var temp = this.itemsBuffer.slice(0, this.lazyRenderingInitialCount);
+    this.items = this.itemsBuffer.slice(this.lazyRenderingInitialCount, this.itemsBuffer.length - 1);
+    this.itemsBuffer = temp;
+
     this.columnsConfig = this.tempColumnsConfig;
     this.tempColumnsConfig = clone(this.tempColumnsConfig);
+
+    // po preskladani dorenderuji zbytek
+    this.renderBatch();
   }
 
   TableViewModel.prototype.reorderTemplate = function (newConfig) {
@@ -82,7 +128,7 @@ connector.on('remote', function (sklikApi) {
 
     newConfig.forEach(function (item) {
       if (item.show) {
-        var td = src.querySelector('td[data-col="' + item.columnId + '"]');
+        var td = src.querySelector('td[data-col="' + item.id + '"]');
 
         dest.appendChild(td);
       }
@@ -106,14 +152,67 @@ connector.on('remote', function (sklikApi) {
   }
 
   TableViewModel.prototype.loadCampaigns = function (options) {
+    this.isDataLoaded = false;
+    this.isRendered = false;
+
     sklikApi.getCampaigns(options, function (err, data) {
       this.totalCount = data.totalCount;
       this.items = data.campaigns.map(function (item) {
         return ko.track(item);
       });
 
+      this.isDataLoaded = true;
+
+      // pokud nerendrujeme lazy, tak do bufferu hodim vsechny zaznamy
+      if (!this.lazyRendering) {
+        this.itemsBuffer = this.items;
+        // tabulka je vyrenderovana zaraz
+        this.isRendered = true;
+      }
+      // lazy rendering
+      else {
+        this.itemsBuffer = this.shiftItemsFromArray(this.items, this.lazyRenderingInitialCount);
+
+        // pokud jsme prave nezobrazili vse, tak zacneme rendrovat po davkach
+        if (this.items.length) {
+          this.renderBatch();
+        }
+      }
+
+      // priprav data pro vykresleni pageru
       this.preparePager();
     }.bind(this));
+  }
+
+  TableViewModel.prototype.renderBatch = function () {
+    setTimeout(function () {
+      var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchDelay);
+
+      // vyrendrovani dalsi davky
+      batchItems.forEach(function (item) {
+        this.itemsBuffer.push(item);
+      }, this);
+
+      //console.log('itemsBuffer:', this.itemsBuffer.length, 'items:', this.items.length);
+
+      if (this.items.length) {
+        this.renderBatch();
+      }
+      else {
+        // tabulka je cela vyrendrovana
+        this.isRendered = true;
+      }
+    }.bind(this), this.lazyRenderingBatchDelay);
+  }
+
+  TableViewModel.prototype.shiftItemsFromArray = function (arr, count) {
+    var acc = [];
+
+    while (count-- && arr.length > 0) {
+      acc.push(arr.shift());
+    }
+
+    return acc;
   }
 
   TableViewModel.prototype.preparePager = function () {
@@ -180,59 +279,64 @@ connector.on('remote', function (sklikApi) {
 
   var columnsConfig = [
     {
-      columnId: 'id',
+      id: 'id',
       name: 'ID',
       show: false
     },
     {
-      columnId: 'name',
+      id: 'name',
       name: 'Kampaň',
       show: true
     },
     {
-      columnId: 'status',
+      id: 'status',
       name: 'Stav',
       show: true
     },
     {
-      columnId: 'budget',
+      id: 'budget',
       name: 'Rozpočet',
       show: true
     },
     {
-      columnId: 'clicks',
+      id: 'clicks',
       name: 'Prokliky',
       show: true
     },
     {
-      columnId: 'views',
+      id: 'views',
       name: 'Zobrazení',
       show: true
     },
     {
-      columnId: 'ctr',
+      id: 'ctr',
       name: 'CTR',
       show: true
     },
     {
-      columnId: 'cpc',
+      id: 'cpc',
       name: 'CPC',
       show: true
     },
     {
-      columnId: 'price',
+      id: 'price',
       name: 'Cena',
       show: true
     },
     {
-      columnId: 'position',
+      id: 'position',
       name: 'Pozice',
       show: true
     }
   ];
 
-  var tableViewModel = window.tableViewModel = new TableViewModel('tpl-row', columnsConfig);
+  var tableViewModel = window.tableViewModel = new TableViewModel({
+    rowTemplateId: 'tpl-row',
+    columnsConfig: columnsConfig,
+    lazyRendering: true
+  });
 
+  // nabindovani na document.body
   ko.applyBindings(tableViewModel);
 });
 

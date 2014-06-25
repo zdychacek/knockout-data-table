@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
   <title>Knockout table</title>
+  <link rel="stylesheet" type="text/css" href="/styles.css">
   <script src="http://localhost:3000/js/bundle.js"></script>
   <script src="/js/jquery-1.9.1.js"></script>
   <script src="/js/jquery-ui.js"></script>
@@ -19,7 +20,7 @@
 
       <td data-col="name">
         <span data-bind="text: item.name"></span>
-        <input data-bind="value: item.name"/>
+        <input data-bind="value: item.name, valueUpdate: 'afterkeydown'"/>
       </td>
 
       <td data-col="status">
@@ -92,7 +93,7 @@
           <!-- /ko -->
         </tr>
       </thead>
-      <tbody data-bind="template: { name: 'tpl-row', foreach: items, as: 'item' }">
+      <tbody data-bind="template: { name: 'tpl-row', foreach: itemsBuffer, as: 'item' }">
       </tbody>
     </table>
 
@@ -101,15 +102,26 @@
 
   <!-- columns shuffler -->
   <div style="float:left; padding-left: 20px">
-    <ul data-bind="sortable: tempColumnsConfig">
-      <li>
-        <input type="checkbox" data-bind="checked: show"/>
-        <span data-bind="text: name"></span>
-      </li>
-    </ul>
+    <div data-bind="visible: isRendered" style="display:none">
+      <ul data-bind="sortable: tempColumnsConfig">
+        <li>
+          <input type="checkbox" data-bind="checked: show"/>
+          <span data-bind="text: name"></span>
+        </li>
+      </ul>
+
+      <button data-bind="click: sortColumns.bind($root)">Preskladat</button>
+    </div>
+
+    <div data-bind="visible: !isDataLoaded">
+      Loading data...
+    </div>
+
+    <div data-bind="visible: !isRendered">
+      Rendering data...
+    </div>
   </div>
 
-  <button data-bind="click: sortColumns.bind($root)">Preskladat</button>
 
   <script src="/js/app.js"></script>
 </body>
