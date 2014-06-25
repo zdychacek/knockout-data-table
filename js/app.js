@@ -8,9 +8,10 @@ connector.on('remote', function (sklikApi) {
 
   TableViewModel.defaults = {
     lazyRendering: false,
-    lazyRenderingBatchSize: 10,
-    lazyRenderingBatchDelay: 25,
-    lazyRenderingInitialCount: 40
+    lazyRenderingBatchSize: 15,
+    lazyRenderingBatchDelay: 70,
+    lazyRenderingInitialCount: 80,
+    lazyRenderingThreshold: 200
   };
 
   function TableViewModel (config) {
@@ -87,6 +88,9 @@ connector.on('remote', function (sklikApi) {
     // pocet radku vyrendrovanych na prvni dobrou
     this.lazyRenderingInitialCount = config.lazyRenderingInitialCount || defaults.lazyRenderingInitialCount;
 
+    // pokud je povoleno postupne renderovani, tak se zacne skutecne renderovat postupne az pri pozadavku na zobrazeni tohoto poctu dat
+    this.lazyRenderingThreshold = config.lazyRenderingThreshold || defaults.lazyRenderingThreshold;
+
     // naveseni posluchacu
     this.attachSubscriptions();
 
@@ -99,7 +103,7 @@ connector.on('remote', function (sklikApi) {
 
   TableViewModel.prototype.attachSubscriptions = function () {
     ko.getObservable(this, 'itemsPerPage').subscribe(function (newValue) {
-      this.setPage();
+      this.setPage(1);
     }.bind(this));
   }
 
@@ -162,20 +166,20 @@ connector.on('remote', function (sklikApi) {
 
       this.isDataLoaded = true;
 
-      // pokud nerendrujeme lazy, tak do bufferu hodim vsechny zaznamy
-      if (!this.lazyRendering) {
-        this.itemsBuffer = this.items;
-        // tabulka je vyrenderovana zaraz
-        this.isRendered = true;
-      }
       // lazy rendering
-      else {
+      if (this.lazyRendering && this.items.length > this.lazyRenderingThreshold) {
         this.itemsBuffer = this.shiftItemsFromArray(this.items, this.lazyRenderingInitialCount);
 
         // pokud jsme prave nezobrazili vse, tak zacneme rendrovat po davkach
         if (this.items.length) {
           this.renderBatch();
         }
+      }
+      // pokud nerendrujeme lazy, tak do bufferu hodim vsechny zaznamy
+      else {
+        this.itemsBuffer = this.items;
+        // tabulka je vyrenderovana zaraz
+        this.isRendered = true;
       }
 
       // priprav data pro vykresleni pageru
@@ -280,7 +284,7 @@ connector.on('remote', function (sklikApi) {
     {
       id: 'id',
       name: 'ID',
-      show: false
+      show: true
     },
     {
       id: 'name',

@@ -1,0 +1,6 @@
+table {
+	margin-left: 40px;
+}
+.col-sorter li {
+	cursor: move;
+}
