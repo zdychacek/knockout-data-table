@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+  <title>Knockout table</title>
+  <script src="http://localhost:3000/js/bundle.js"></script>
+  <script src="/js/jquery-1.9.1.js"></script>
+  <script src="/js/jquery-ui.js"></script>
+  <script src="/js/knockout-min.js"></script>
+  <script src="/js/knockout-es5.js"></script>
+  <script src="/js/knockout-sortable.js"></script>
+</head>
+<body>
+  <script type="text/html" id="tpl-row">
+    <tr>
+      <td data-col="id">
+        <input type="checkbox"/>
+      </td>
+
+      <td data-col="name">
+        <span data-bind="text: item.name"></span>
+        <input data-bind="value: item.name"/>
+      </td>
+
+      <td data-col="status">
+        <span data-bind="text: item.status"></span>
+        <!--input data-bind="value: item.status"/-->
+      </td>
+
+      <td data-col="budget">
+        <span data-bind="text: item.budget"></span>
+        <!--input data-bind="value: item.budget"/-->
+      </td>
+
+      <td data-col="clicks">
+        <span data-bind="text: item.clicks"></span>
+        <!--input data-bind="value: item.clicks"/-->
+      </td>
+
+      <td data-col="views">
+        <span data-bind="text: item.views"></span>
+        <!--input data-bind="value: item.views"/-->
+      </td>
+
+      <td data-col="ctr">
+        <span data-bind="text: item.ctr"></span>
+        <!--input data-bind="value: item.ctr"/-->
+      </td>
+
+      <td data-col="cpc">
+        <span data-bind="text: item.cpc"></span>
+        <!--input data-bind="value: item.cpc"/-->
+      </td>
+
+      <td data-col="price">
+        <span data-bind="text: item.price"></span>
+        <!--input data-bind="value: item.price"/-->
+      </td>
+
+      <td data-col="position">
+        <span data-bind="text: item.position"></span>
+        <!--input data-bind="value: item.position"/-->
+      </td>
+    </tr>
+  </script>
+
+  <script type="text/html" id="tpl-pager">
+    <!-- pocet zazanamu na stranku --> 
+    <select data-bind="options: itemsPerCountList, value: itemsPerPage"></select>
+
+    <!-- strankovac -->
+    <span data-bind="foreach: pager">
+      <!-- ko if: $data != $root.currentPage -->
+        <a href="#" data-bind="click: $root.setPage.bind($root, $data), text: $data"></a>
+      <!-- /ko -->
+      <!-- ko if: $data == $root.currentPage -->
+        <span data-bind="text: $data"></span>
+      <!-- /ko -->
+    </span>
+  </script>
+
+  <div style="float: left; width: 60%">
+    <!-- ko template: 'tpl-pager'--><!-- /ko -->
+
+    <table style="width: 75%">
+      <thead>
+        <tr data-bind="foreach: { data: columnsConfig, as: 'col'}">
+          <!-- ko if: col.show -->
+            <td>
+              <a data-bind="click: $root.sortBy.bind($root, col.id), text: col.name" href="#"></a>
+            </td>
+          <!-- /ko -->
+        </tr>
+      </thead>
+      <tbody data-bind="template: { name: 'tpl-row', foreach: items, as: 'item' }">
+      </tbody>
+    </table>
+
+    <!-- ko template: 'tpl-pager'--><!-- /ko -->
+  </div>
+
+  <!-- columns shuffler -->
+  <div style="float:left; padding-left: 20px">
+    <ul data-bind="sortable: tempColumnsConfig">
+      <li>
+        <input type="checkbox" data-bind="checked: show"/>
+        <span data-bind="text: name"></span>
+      </li>
+    </ul>
+  </div>
+
+  <button data-bind="click: sortColumns.bind($root)">Preskladat</button>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
