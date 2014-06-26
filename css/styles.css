@@ -1,6 +1,11 @@
 table {
 	margin-left: 40px;
 }
+
+table thead th a:hover {
+	text-decoration: none;
+}
+
 .col-sorter li {
 	cursor: move;
 }

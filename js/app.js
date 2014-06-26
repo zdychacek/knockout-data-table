@@ -1,6 +1,8 @@
 connector.on('remote', function (SklikApi) {
   'use strict';
 
+  window.SklikApi = SklikApi;
+
   var Direction = {
     ASC: 'SORT_ASC',
     DESC: 'SORT_DESC'
@@ -16,16 +18,13 @@ connector.on('remote', function (SklikApi) {
     lazyRenderingBatchSize: 10,
     lazyRenderingBatchDelay: 70,
     lazyRenderingInitialCount: 40,
-    lazyRenderingThreshold: 200
+    lazyRenderingThreshold: 100
   };
 
   function TableViewModel (config) {
     if (!config) {
       throw new Error('Missing configuration data.');
     }
-
-    // vychozi nastaveni
-    var defaults = TableViewModel.defaults;
 
     // pole nactenych dat pro jednu stranku
     this.items = [];
@@ -62,7 +61,7 @@ connector.on('remote', function (SklikApi) {
     this.order = config.defaultOrder || this.getFirstSortableColumn().id;
 
     // smer razeni
-    this.direction = config.defaultDirection || defaults.defaultDirection;
+    this.direction = config.defaultDirection || this.getDefaults('defaultDirection');
 
     // priznak, zda je tabulka jiz cela dorenderovana
     this.isRendered = false;
@@ -89,25 +88,25 @@ connector.on('remote', function (SklikApi) {
     this.originalRowTemplate = this.rowTemplateCnt.innerHTML;
 
     // zda zobrazovat checkboxy pro vyber polozek
-    this.itemsSelectionOn = typeof config.itemsSelectionOn !== 'undefined' ? config.itemsSelectionOn : defaults.itemsSelectionOn;
+    this.itemsSelectionOn = typeof config.itemsSelectionOn !== 'undefined' ? config.itemsSelectionOn : this.getDefaults('itemsSelectionOn');
 
     // ----------- LAZY RENDERING STUFF
     
     // mae zapnuty lazyloading?
-    this.lazyRendering = config.lazyRendering || defaults.lazyRendering;
+    this.lazyRendering = config.lazyRendering || this.getDefaults('lazyRendering');
 
     // pocet radku vykreslovanych v ramci jedne davky
-    this.lazyRenderingBatchSize = config.lazyRenderingBatchSize || defaults.lazyRenderingBatchSize;
+    this.lazyRenderingBatchSize = config.lazyRenderingBatchSize || this.getDefaults('lazyRenderingBatchSize');
 
     // prodlevy pred vykreslenim dalsi davky
     this.lazyRenderingBatchDelay = typeof config.lazyRenderingBatchDelay !== 'undefined'?
-      config.lazyRenderingBatchDelay : defaults.lazyRenderingBatchDelay;
+      config.lazyRenderingBatchDelay : this.getDefaults('lazyRenderingBatchDelay');
 
     // pocet radku vyrendrovanych na prvni dobrou
-    this.lazyRenderingInitialCount = config.lazyRenderingInitialCount || defaults.lazyRenderingInitialCount;
+    this.lazyRenderingInitialCount = config.lazyRenderingInitialCount || this.getDefaults('lazyRenderingInitialCount');
 
     // pokud je povoleno postupne renderovani, tak se zacne skutecne renderovat postupne az pri pozadavku na zobrazeni tohoto poctu dat
-    this.lazyRenderingThreshold = config.lazyRenderingThreshold || defaults.lazyRenderingThreshold;
+    this.lazyRenderingThreshold = config.lazyRenderingThreshold || this.getDefaults('lazyRenderingThreshold');
 
     // stavova informace o nacitani dat a rendrovani
     ko.defineProperty(this, 'systemStatus', function () {
@@ -136,6 +135,15 @@ connector.on('remote', function (SklikApi) {
 
     // preskladani sloupcu
     this.reorderTemplate(this.columnsConfig);
+  }
+
+  TableViewModel.prototype.getDefaults = function (key) {
+    if (key) {
+      return this.constructor.defaults[key];
+    }
+    else {
+      return this.constructor.defaults;
+    }
   }
 
   TableViewModel.prototype.createRowTemplateCnt = function (tplId) {
@@ -252,7 +260,7 @@ connector.on('remote', function (SklikApi) {
         item.$isSelected = false;
 
         // trackovani zmen na objektu
-        return ko.track(item);
+        return ko.deepTrack(item);
       });
 
       this.isDataLoaded = true;
@@ -269,6 +277,7 @@ connector.on('remote', function (SklikApi) {
       // pokud nerendrujeme lazy, tak do bufferu hodim vsechny zaznamy
       else {
         this.itemsBuffer = this.items;
+        this.items = [];
         // tabulka je vyrenderovana zaraz
         this.isRendered = true;
       }

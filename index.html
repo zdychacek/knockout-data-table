@@ -9,9 +9,11 @@
   <script src="/js/jquery-1.9.1.js"></script>
   <script src="/js/jquery-ui.js"></script>
   <script src="/js/knockout-min.js"></script>
-  <script src="/js/extensions.js"></script>
   <script src="/js/knockout-es5.js"></script>
+  <script src="/js/knockout.es5.mapping.js"></script>
+  <script src="/js/extensions.js"></script>
   <script src="/js/knockout-sortable.js"></script>
+  <script src="/js/knockout-switch-case.min.js"></script>
 </head>
 <body>
 
@@ -23,9 +25,14 @@
   </script>
 
   <script type="text/html" id="tpl-cell-status">
-    <td>
-      <span data-bind="text: item.status"></span>
-      <!--input data-bind="value: item.status"/-->
+    <div >
+    <td data-bind="switch: item.status">
+      <!-- ko case: 'STATUS_DISABLED' -->
+        <span class="glyphicon glyphicon-remove" style="color:red"></span>
+      <!-- /ko -->
+      <!-- ko case: 'STATUS_ACTIVE' -->
+        <span class="glyphicon glyphicon-ok" style="color:green"></span>
+      <!-- /ko -->
     </td>
   </script>
 
@@ -38,43 +45,39 @@
 
   <script type="text/html" id="tpl-cell-clicks">
     <td>
-      <span data-bind="text: item.clicks"></span>
-      <!--input data-bind="value: item.clicks"/-->
+      <span data-bind="text: item.stats.clicks"></span>
     </td>
   </script>
 
   <script type="text/html" id="tpl-cell-views">
     <td>
-      <span data-bind="text: item.views"></span>
-      <!--input data-bind="value: item.views"/-->
+      <span data-bind="text: item.stats.views"></span>
     </td>
   </script>
 
   <script type="text/html" id="tpl-cell-ctr">
     <td>
-      <span data-bind="text: item.ctr"></span>
-      <!--input data-bind="value: item.ctr"/-->
+      <span data-bind="text: item.stats.ctr"></span>
     </td>
   </script>
 
   <script type="text/html" id="tpl-cell-cpc">
     <td>
-      <span data-bind="decimal: item.cpc"></span>
-      <!--input data-bind="value: item.cpc"/-->
+      <span data-bind="decimal: item.stats.cpc"></span>
     </td>
   </script>
 
   <script type="text/html" id="tpl-cell-price">
     <td>
-      <span data-bind="currency: item.price"></span>
-      <input data-bind="value: item.price, valueUpdate: 'afterkeydown'"/>
+      <span data-bind="currency: item.stats.price"></span>
+      <input data-bind="value: item.stats.price, valueUpdate: 'afterkeydown'"/>
     </td>
   </script>
 
   <script type="text/html" id="tpl-cell-position">
     <td>
-      <span data-bind="decimal: item.position"></span>
-      <!--input data-bind="value: item.position"/-->
+      <span data-bind="decimal: item.stats.position"></span>
+      <!--input data-bind="value: item.stats.position"/-->
     </td>
   </script>
 
