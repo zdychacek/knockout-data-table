@@ -8,9 +8,9 @@ connector.on('remote', function (sklikApi) {
 
   TableViewModel.defaults = {
     lazyRendering: false,
-    lazyRenderingBatchSize: 15,
-    lazyRenderingBatchDelay: 70,
-    lazyRenderingInitialCount: 80,
+    lazyRenderingBatchSize: 14,
+    lazyRenderingBatchDelay: 40,
+    lazyRenderingInitialCount: 60,
     lazyRenderingThreshold: 200
   };
 
@@ -32,10 +32,10 @@ connector.on('remote', function (sklikApi) {
     this.totalCount = 0;
 
     // seznam poctu zaznamu na stranku
-    this.itemsPerCountList = [ 10, 20, 50, 100, 200, 500, 800, 1000];
+    this.itemsPerCountList = [ 10, 20, 50, 100, 200, 500, 800, 1000 ];
 
     // aktualne na stranku
-    this.itemsPerPage = 500;
+    this.itemsPerPage = 1000;
 
     // cislo aktualni stranky
     this.currentPage = 1;
@@ -63,6 +63,9 @@ connector.on('remote', function (sklikApi) {
 
     // trackuj tento viewmodel
     ko.track(this);
+
+    // reference na underlying observable
+    this.itemsBufferObservable = ko.getObservable(this, 'itemsBuffer');
 
     // id sablony pro jeden radek
     this.rowTemplateId = config.rowTemplateId;
@@ -110,25 +113,28 @@ connector.on('remote', function (sklikApi) {
   TableViewModel.prototype.sortColumns = function () {
     this.isRendered = false;
 
-    // pred preskladanim sloupcu oriznu mnozinu dat
-    var temp = this.itemsBuffer.slice(0, this.lazyRenderingInitialCount);
-    this.items = this.itemsBuffer.slice(this.lazyRenderingInitialCount, this.itemsBuffer.length - 1);
-    this.itemsBuffer = temp;
+    // at se pred akci stihne nadechnout UI
+    setTimeout(function () {
+      // pred preskladanim sloupcu oriznu mnozinu dat
+      var firstItems = this.itemsBuffer.slice(0, this.lazyRenderingInitialCount);
+      this.items = this.itemsBuffer.slice(this.lazyRenderingInitialCount, this.itemsBuffer.length - 1);
+      this.itemsBuffer = firstItems;
 
-    this.columnsConfig = this.tempColumnsConfig;
-    this.tempColumnsConfig = clone(this.tempColumnsConfig);
+      this.columnsConfig = this.tempColumnsConfig;
+      this.tempColumnsConfig = clone(this.tempColumnsConfig);
 
-    this.reorderTemplate(this.columnsConfig);
+      this.reorderTemplate(this.columnsConfig);
 
-    // force rerenderingu
-    ko.getObservable(this, 'itemsBuffer').refresh();
+      // force rerenderingu
+      ko.getObservable(this, 'itemsBuffer').refresh();
 
-    if (!this.lazyRendering) {
-      this.isRendered = true;
-    }
+      if (!this.lazyRendering) {
+        this.isRendered = true;
+      }
 
-    // po preskladani dorenderuji zbytek
-    this.renderBatch();
+      // po preskladani dorenderuji zbytek
+      this.renderBatch();
+    }.bind(this), 0);
   }
 
   TableViewModel.prototype.reorderTemplate = function (newConfig) {
@@ -189,14 +195,15 @@ connector.on('remote', function (sklikApi) {
 
   TableViewModel.prototype.renderBatch = function () {
     setTimeout(function () {
-      var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchDelay);
+      //console.time('b');
+
+      var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchSize);
 
       // vyrendrovani dalsi davky
-      batchItems.forEach(function (item) {
-        this.itemsBuffer.push(item);
-      }, this);
+      Array.prototype.push.apply(this.itemsBuffer, batchItems);
+      this.itemsBufferObservable.valueHasMutated();
 
-      //console.log('itemsBuffer:', this.itemsBuffer.length, 'items:', this.items.length);
+      //console.timeEnd('b');
 
       if (this.items.length) {
         this.renderBatch();
