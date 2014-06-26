@@ -11,7 +11,7 @@ connector.on('remote', function (SklikApi) {
     defaultDirection: Direction.ASC,
     lazyRendering: false,
     cellTemplatePrefix: 'tpl-cell-',
-    lazyRenderingBatchSize: 17,
+    lazyRenderingBatchSize: 15,
     lazyRenderingBatchDelay: 37,
     lazyRenderingInitialCount: 60,
     lazyRenderingThreshold: 200
@@ -103,6 +103,16 @@ connector.on('remote', function (SklikApi) {
 
     // pokud je povoleno postupne renderovani, tak se zacne skutecne renderovat postupne az pri pozadavku na zobrazeni tohoto poctu dat
     this.lazyRenderingThreshold = config.lazyRenderingThreshold || defaults.lazyRenderingThreshold;
+
+    // stavova informace o nacitani dat a rendrovani
+    ko.defineProperty(this, 'systemStatus', function () {
+      if (!this.isDataLoaded) {
+        return 'Loading data...';
+      }
+      else if (!this.isRendered) {
+        return 'Rendering data...';
+      }
+    }, this);
 
     // naveseni posluchacu
     this.attachSubscriptions();
@@ -214,13 +224,13 @@ connector.on('remote', function (SklikApi) {
 
   TableViewModel.prototype.loadCampaigns = function (options) {
     this.isDataLoaded = false;
-    this.isRendered = false;
-
     // zrusim oznaceni vsech polozek
     this.allItemsSelected = false;
 
     // pozadavek na API
     SklikApi.getCampaigns(options, function (err, data) {
+      this.isRendered = false;
+
       this.totalCount = data.totalCount;
       this.items = data.campaigns.map(function (item) {
         // pridani zvlastni property
