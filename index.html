@@ -8,7 +8,8 @@
   <script src="http://localhost:3000/js/bundle.js"></script>
   <script src="/js/jquery-1.9.1.js"></script>
   <script src="/js/jquery-ui.js"></script>
-  <script src="/js/knockout-min.js"></script>
+  <!--script src="/js/knockout-min.js"></script-->
+  <script src="/js/knockout.debug.js"></script>
   <script src="/js/knockout-es5.js"></script>
   <script src="/js/knockout.es5.mapping.js"></script>
   <script src="/js/extensions.js"></script>
@@ -38,32 +39,32 @@
           <span class="glyphicon glyphicon-ok" style="color:green"></span>
         <!-- /ko -->
       </td>
-    
+
       <td data-col="budget">
         <span data-bind="currency: row.budget"></span>
       </td>
-    
+
       <td data-col="clicks">
         <span data-bind="text: row.stats.clicks"></span>
       </td>
-    
+
       <td data-col="views">
         <span data-bind="text: row.stats.views"></span>
       </td>
-    
+
       <td data-col="ctr">
         <span data-bind="text: row.stats.ctr"></span>
       </td>
-    
+
       <td data-col="cpc">
         <span data-bind="decimal: row.stats.cpc"></span>
       </td>
-    
+
       <td data-col="price">
         <span data-bind="currency: row.stats.price"></span><br/>
         <input data-bind="value: row.stats.price, valueUpdate: 'afterkeydown'"/>
       </td>
-    
+
       <td data-col="position">
         <span data-bind="decimal: row.stats.position"></span>
       </td>
@@ -85,93 +86,48 @@
       <td data-col="status">
         <span>-</span>
       </td>
-    
+
       <td data-col="budget">
         <span data-bind="currency: row.budget"></span>
       </td>
-    
+
       <td data-col="clicks">
         <span data-bind="text: row.clicks"></span>
       </td>
-    
+
       <td data-col="views">
         <span data-bind="text: row.views"></span>
       </td>
-    
+
       <td data-col="ctr">
         <span data-bind="text: row.ctr"></span>
       </td>
-    
+
       <td data-col="cpc">
         <span data-bind="decimal: row.cpc"></span>
       </td>
-    
+
       <td data-col="price">
         <span data-bind="currency: row.price"></span>
       </td>
-    
+
       <td data-col="position">
         <span data-bind="decimal: row.position"></span>
       </td>
     </tr>
   </script>
 
-  <script type="text/html" id="tpl-pager">
-    <div class="col-md-12">
-      <!-- strankovac -->
-      <ul class="pagination" data-bind="foreach: pager">
-        <li data-bind="css: { active: $data == $root.currentPage }">
-          <a href="#" data-bind="click: $root.setPage.bind($root, $data), text: $data"></a>
-        </li>
-      </ul>
+  <h1>Seznam kampaní</h1>
 
-      <!-- pocet zazanamu na stranku --> 
-      <select data-bind="options: itemsPerCountList, value: itemsPerPage" class="items-per-page"></select>
-    </div>
-  </script>
 
   <div style="float: left; width: 60%">
-    <h1>Seznam kampaní</h1>
 
-    <!-- ko template: 'tpl-pager'--><!-- /ko -->
+  <sklik-table params="config: config"></sklik-table>
 
-    <table class="table table-striped">
-      <thead class="sorting">
-        <tr>
-          <!-- ko if: itemsSelectionOn -->
-            <th>
-              <input type="checkbox" data-bind="click: selectAllItems, checked: allItemsSelected, disable: !isRendered" />
-            </th>
-          <!-- /ko -->
-
-          <!-- ko foreach: { data: visibleColumns, as: 'col'} -->
-            <th>
-              <!-- ko if: col.sortable -->
-                <a data-bind="click: $root.sortBy.bind($root, col.id),
-                  text: col.name,
-                  css: {
-                    'glyphicon-chevron-up': col.id == $root.order &amp;&amp; $root.direction == 'SORT_ASC',
-                    'glyphicon-chevron-down': col.id == $root.order &amp;&amp; $root.direction == 'SORT_DESC' 
-                  }" href="#" class="glyphicon"></a>
-              <!-- /ko -->
-              <!-- ko ifnot: col.sortable -->
-                <span data-bind="text: col.name"></span>
-              <!-- /ko -->
-            </th>
-          <!-- /ko -->
-        </tr>
-      </thead>
-      <tfoot data-bind="foreach: sumRowsForTeplate">
-        <!-- ko template: { name: template, foreach: data, as: 'row' } --><!-- /ko  -->
-      <tfoot>
-      <tbody data-bind="template: { name: rowTemplateId, foreach: itemsBuffer, as: 'row' }"></tbody>
-    </table>
-
-    <!-- ko template: 'tpl-pager'--><!-- /ko -->
   </div>
 
   <!-- columns shuffler -->
-  <div data-bind="visible: isRendered" style="float:right; padding-right: 50px;display:none">
+  <!--div data-bind="visible: isRendered" style="float:right; padding-right: 50px;display:none">
     <h1>Sortování sloupců</h1>
 
     <div>
@@ -186,8 +142,11 @@
     </div>
   </div>
 
-  <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="alert alert-warning"></div>
+  <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="alert alert-warning"></div-->
 
+  <script src="/js/MainViewModel.js"></script>
+  <script src="/js/PagerViewModel.js"></script>
+  <script src="/js/TableViewModel.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>
