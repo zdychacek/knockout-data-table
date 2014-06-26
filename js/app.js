@@ -12,9 +12,8 @@ connector.on('remote', function (SklikApi) {
   TableViewModel.defaults = {
     defaultDirection: Direction.ASC,
     lazyRendering: false,
-    cellTemplatePrefix: 'tpl-cell-',
     itemsSelectionOn: true,
-    tplSelectionCol: '<td><input data-bind="checked: item.$isSelected" type="checkbox"/></td>',
+    tplSelectionCol: '',
     lazyRenderingBatchSize: 10,
     lazyRenderingBatchDelay: 70,
     lazyRenderingInitialCount: 40,
@@ -34,6 +33,9 @@ connector.on('remote', function (SklikApi) {
 
     // celkovy pocet zaznamu
     this.totalCount = 0;
+
+    // data pro souctove radky
+    this.sums = [];
 
     // seznam poctu zaznamu na stranku
     this.itemsPerCountList = [ 10, 20, 50, 100, 200, 500, 800, 1000 ];
@@ -72,21 +74,12 @@ connector.on('remote', function (SklikApi) {
     // trackuj tento viewmodel
     ko.track(this);
 
-    // mapovani id sloupcu na sablonky
-    this.cellsTemplatesMap = {};
+    // cache pro zkompilovane sablony
+    this.compiledTemplatesCache = {};
 
     // reference na underlying observable
     this.itemsBufferObservable = ko.getObservable(this, 'itemsBuffer');
-
-    // unikatni id sablony radku
-    this.rowTemplateId = 'tpl-table-' + (new Date().getTime());
     
-    // kontejner pro sablonu radku
-    this.rowTemplateCnt = this.createRowTemplateCnt(this.rowTemplateId);
-
-    // text sablony
-    this.originalRowTemplate = this.rowTemplateCnt.innerHTML;
-
     // zda zobrazovat checkboxy pro vyber polozek
     this.itemsSelectionOn = typeof config.itemsSelectionOn !== 'undefined' ? config.itemsSelectionOn : this.getDefaults('itemsSelectionOn');
 
@@ -108,6 +101,23 @@ connector.on('remote', function (SklikApi) {
     // pokud je povoleno postupne renderovani, tak se zacne skutecne renderovat postupne az pri pozadavku na zobrazeni tohoto poctu dat
     this.lazyRenderingThreshold = config.lazyRenderingThreshold || this.getDefaults('lazyRenderingThreshold');
 
+    // definice computed vlastnosti
+    this.defineComputeds();
+
+    // naveseni posluchacu
+    this.attachSubscriptions();
+
+    // nastavim prvni stranku
+    this.setPage(1);
+
+    // priprava sablon
+    this.prepareTemplates(config);
+
+    // preskladani sloupcu
+    this.reorderRowTemplate(this.columnsConfig);
+  }
+
+  TableViewModel.prototype.defineComputeds = function () {
     // stavova informace o nacitani dat a rendrovani
     ko.defineProperty(this, 'systemStatus', function () {
       if (!this.isDataLoaded) {
@@ -118,23 +128,43 @@ connector.on('remote', function (SklikApi) {
       }
     }, this);
 
+    // vraci sloupce, ktere se maji zobrazit
     ko.defineProperty(this, 'visibleColumns', function () {
       return this.columnsConfig.filter(function (col) {
         return col.show;
       });
     }, this);
 
-    // naveseni posluchacu
-    this.attachSubscriptions();
+    // vraci data do sablony souctove radky tabulky
+    ko.defineProperty(this, 'sumRowsForTeplate', function () {
+      return this.sums.map(function (sumRow, index) {
+        // pokud mam vice souctovych radku ale mene sablon, tak na zbyvajici pouziji prvni sablonu
+        var tplIndex = this.sumRowsTemplatesIds.length > index? index : 0;
+        
+        // pridam informaci o indexu
+        sumRow.$index = index;
 
-    // namapovani idecek sloupcu na sablonky bunek
-    this.mapColumnsTemplates(this.columnsConfig);
+        return {
+          template: this.sumRowsTemplatesIds[tplIndex],
+          data: sumRow
+        };
+      }, this);
+    }, this);
+  }
 
-    // nastavim prvni stranku
-    this.setPage(1);
+  TableViewModel.prototype.prepareTemplates = function (config) {
+    // sablona pro radky tabulky 
+    this.rowTemplateId = config.rowTemplateId;
+    this.compileTemplate(this.rowTemplateId);
 
-    // preskladani sloupcu
-    this.reorderTemplate(this.columnsConfig);
+    // sablony pro souctove radky
+    this.sumRowsTemplatesIds = config.sumRowsTemplatesIds;
+
+    if (!Array.isArray(config.sumRowsTemplatesIds)) {
+      this.sumRowsTemplatesIds = [ config.sumRowsTemplatesIds ];
+    }
+
+    this.sumRowsTemplatesIds.forEach(this.compileTemplate, this);
   }
 
   TableViewModel.prototype.getDefaults = function (key) {
@@ -144,30 +174,6 @@ connector.on('remote', function (SklikApi) {
     else {
       return this.constructor.defaults;
     }
-  }
-
-  TableViewModel.prototype.createRowTemplateCnt = function (tplId) {
-    var scriptTag = document.createElement('script');
-
-    scriptTag.id = tplId;
-    scriptTag.type = 'text/html';
-
-    return document.body.appendChild(scriptTag);
-  }
-
-  TableViewModel.prototype.mapColumnsTemplates = function (columnsConfig) {
-    var tplPrefix = TableViewModel.defaults.cellTemplatePrefix;
-
-    columnsConfig.forEach(function (col) {
-      var tplId = col.templateId || tplPrefix + col.id;
-      var tpl = document.getElementById(tplId);
-
-      if (!tpl) {
-        throw new Error('Missing template for column "' + col.id + '".');
-      }
-
-      this.cellsTemplatesMap[col.id] = tpl;
-    }, this);
   }
 
   TableViewModel.prototype.selectAllItems = function () {
@@ -205,10 +211,11 @@ connector.on('remote', function (SklikApi) {
       this.columnsConfig = this.tempColumnsConfig;
       this.tempColumnsConfig = clone(this.tempColumnsConfig);
 
-      this.reorderTemplate(this.columnsConfig);
+      this.reorderRowTemplate(this.columnsConfig);
 
       // force rerenderingu
       ko.getObservable(this, 'itemsBuffer').refresh();
+      ko.getObservable(this, 'sums').refresh();
 
       if (!this.lazyRendering) {
         this.isRendered = true;
@@ -219,24 +226,48 @@ connector.on('remote', function (SklikApi) {
     }.bind(this), 0);
   }
 
-  TableViewModel.prototype.reorderTemplate = function (newConfig) {
-    var strBuilder = ['<tr>'];
+  TableViewModel.prototype.compileTemplate = function (tplId) {
+    var tplEl = document.getElementById(tplId);
+    var cnt = document.createElement('tbody');
+    cnt.innerHTML = tplEl.innerHTML;
 
-    if (this.itemsSelectionOn) {
-      strBuilder.push(TableViewModel.defaults.tplSelectionCol);
+    if (this.compiledTemplatesCache[tplId]) {
+      return this.compiledTemplatesCache[tplId];
     }
 
-    newConfig.forEach(function (item) {
-      if (item.show) {
-        var cellTpl = this.cellsTemplatesMap[item.id];
+    if (cnt.children.length > 1 || cnt.children[0].tagName.toLowerCase() !== 'tr') {
+      throw new Error('Template must contain only one <tr> root element.');
+    }
 
-        strBuilder.push(cellTpl.innerHTML);
+    this.compiledTemplatesCache[tplId] = cnt;
+
+    return cnt;
+  }
+
+  TableViewModel.prototype.reorderRowTemplate = function (columnsConfig) {
+    for (var tplId in this.compiledTemplatesCache) {
+      var src = this.compiledTemplatesCache[tplId].cloneNode(true);
+      var dest = document.createElement('tbody');
+      var rowEl = src.children[0].cloneNode();
+
+      if (this.itemsSelectionOn) {
+        var selectionEl = src.querySelector('td[data-col="selection"]');
+
+        rowEl.appendChild(selectionEl);
       }
-    }, this);
 
-    strBuilder.push('</tr>');
+      columnsConfig.forEach(function (col) {
+        if (col.show) {
+          rowEl.appendChild(src.querySelector('td[data-col="' + col.id + '"]'));
+        }
+      });
 
-    this.rowTemplateCnt.innerHTML = strBuilder.join('');
+      dest.appendChild(rowEl);
+
+      var container = document.getElementById(tplId);
+      // nastavim text nove sablony
+      container.innerHTML = dest.innerHTML;
+    }
   }
 
   TableViewModel.prototype.getRangeForPage = function (page) {
@@ -253,17 +284,25 @@ connector.on('remote', function (SklikApi) {
     // pozadavek na API
     SklikApi.getCampaigns(options, function (err, data) {
       this.isRendered = false;
+      this.isDataLoaded = true;
 
       this.totalCount = data.totalCount;
       this.items = data.campaigns.map(function (item) {
         // pridani zvlastni property
         item.$isSelected = false;
 
-        // trackovani zmen na objektu
+        // trackovani zmen na objektu (muze byt vnorena struktura)
         return ko.deepTrack(item);
       });
 
-      this.isDataLoaded = true;
+      // data pro souctove radky
+      this.sums = [];
+      
+      for (var prop in data) {
+        if (data.hasOwnProperty(prop) && prop.indexOf('sum') == 0) {
+          this.sums.push(data[prop]);
+        }
+      }
 
       // lazy rendering
       if (this.lazyRendering && this.items.length > this.lazyRenderingThreshold) {
@@ -446,6 +485,13 @@ connector.on('remote', function (SklikApi) {
 
   var tableViewModel = window.tableViewModel = new TableViewModel({
     columnsConfig: columnsConfig,
+    rowTemplateId: 'tpl-table-row',
+    /*sumRowsTemplatesIds: [
+      'tpl-table-sum-row',
+      'tpl-table-sum-row',
+      'tpl-table-sum-row'
+    ],*/
+    sumRowsTemplatesIds: 'tpl-table-sum-row',
     //defaultOrder: 'price',
     itemsSelectionOn: true,
     defaultItemsPerPage: 500,

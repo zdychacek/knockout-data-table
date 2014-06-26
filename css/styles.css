@@ -6,6 +6,10 @@ table thead th a:hover {
 	text-decoration: none;
 }
 
+table tfoot tr.total td > * {
+	font-weight: bold;
+}
+
 .col-sorter li {
 	cursor: move;
 }

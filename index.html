@@ -17,72 +17,107 @@
 </head>
 <body>
 
-  <script type="text/html" id="tpl-cell-name">
-    <td>
-      <span data-bind="text: item.name"></span>
-      <input data-bind="value: item.name, valueUpdate: 'afterkeydown'"/>
-    </td>
-  </script>
-
-  <script type="text/html" id="tpl-cell-status">
-    <div >
-    <td data-bind="switch: item.status">
-      <!-- ko case: 'STATUS_DISABLED' -->
-        <span class="glyphicon glyphicon-remove" style="color:red"></span>
+  <script type="text/html" id="tpl-table-row">
+    <tr>
+      <!-- ko if: $root.itemsSelectionOn -->
+        <td data-col="selection">
+          <input data-bind="checked: row.$isSelected" type="checkbox"/>
+        </td>
       <!-- /ko -->
-      <!-- ko case: 'STATUS_ACTIVE' -->
-        <span class="glyphicon glyphicon-ok" style="color:green"></span>
+
+      <td data-col="name">
+        <span data-bind="text: row.name"></span><br/>
+        <input data-bind="value: row.name, valueUpdate: 'afterkeydown'"/>
+      </td>
+
+      <td data-col="status" data-bind="switch: row.status">
+        <!-- ko case: 'STATUS_DISABLED' -->
+          <span class="glyphicon glyphicon-remove" style="color:red"></span>
+        <!-- /ko -->
+        <!-- ko case: 'STATUS_ACTIVE' -->
+          <span class="glyphicon glyphicon-ok" style="color:green"></span>
+        <!-- /ko -->
+      </td>
+    
+      <td data-col="budget">
+        <span data-bind="currency: row.budget"></span>
+      </td>
+    
+      <td data-col="clicks">
+        <span data-bind="text: row.stats.clicks"></span>
+      </td>
+    
+      <td data-col="views">
+        <span data-bind="text: row.stats.views"></span>
+      </td>
+    
+      <td data-col="ctr">
+        <span data-bind="text: row.stats.ctr"></span>
+      </td>
+    
+      <td data-col="cpc">
+        <span data-bind="decimal: row.stats.cpc"></span>
+      </td>
+    
+      <td data-col="price">
+        <span data-bind="currency: row.stats.price"></span><br/>
+        <input data-bind="value: row.stats.price, valueUpdate: 'afterkeydown'"/>
+      </td>
+    
+      <td data-col="position">
+        <span data-bind="decimal: row.stats.position"></span>
+      </td>
+    </tr>
+  </script>
+
+  <script type="text/html" id="tpl-table-sum-row">
+    <tr data-bind="css: { total: row.$index == 0 }">
+      <!-- ko if: $root.itemsSelectionOn -->
+        <td data-col="selection"></td>
       <!-- /ko -->
-    </td>
-  </script>
 
-  <script type="text/html" id="tpl-cell-budget">
-    <td>
-      <span data-bind="currency: item.budget"></span>
-      <!--input data-bind="value: item.budget"/-->
-    </td>
-  </script>
+      <td data-col="name" data-bind="switch: row.$index">
+        <span data-bind="case: 0">Celkem</span>
+        <span data-bind="case: 1">Celkem Vyhledávání</span>
+        <span data-bind="case: 2">Celkem Obsah</span>
+      </td>
 
-  <script type="text/html" id="tpl-cell-clicks">
-    <td>
-      <span data-bind="text: item.stats.clicks"></span>
-    </td>
-  </script>
-
-  <script type="text/html" id="tpl-cell-views">
-    <td>
-      <span data-bind="text: item.stats.views"></span>
-    </td>
-  </script>
-
-  <script type="text/html" id="tpl-cell-ctr">
-    <td>
-      <span data-bind="text: item.stats.ctr"></span>
-    </td>
-  </script>
-
-  <script type="text/html" id="tpl-cell-cpc">
-    <td>
-      <span data-bind="decimal: item.stats.cpc"></span>
-    </td>
-  </script>
-
-  <script type="text/html" id="tpl-cell-price">
-    <td>
-      <span data-bind="currency: item.stats.price"></span>
-      <input data-bind="value: item.stats.price, valueUpdate: 'afterkeydown'"/>
-    </td>
-  </script>
-
-  <script type="text/html" id="tpl-cell-position">
-    <td>
-      <span data-bind="decimal: item.stats.position"></span>
-      <!--input data-bind="value: item.stats.position"/-->
-    </td>
+      <td data-col="status">
+        <span>-</span>
+      </td>
+    
+      <td data-col="budget">
+        <span data-bind="currency: row.budget"></span>
+      </td>
+    
+      <td data-col="clicks">
+        <span data-bind="text: row.clicks"></span>
+      </td>
+    
+      <td data-col="views">
+        <span data-bind="text: row.views"></span>
+      </td>
+    
+      <td data-col="ctr">
+        <span data-bind="text: row.ctr"></span>
+      </td>
+    
+      <td data-col="cpc">
+        <span data-bind="decimal: row.cpc"></span>
+      </td>
+    
+      <td data-col="price">
+        <span data-bind="currency: row.price"></span>
+      </td>
+    
+      <td data-col="position">
+        <span data-bind="decimal: row.position"></span>
+      </td>
+    </tr>
   </script>
 
   <script type="text/html" id="tpl-pager">
-    <div class="col-md-4">
+    <div class="col-md-12">
       <!-- strankovac -->
       <ul class="pagination" data-bind="foreach: pager">
         <li data-bind="css: { active: $data == $root.currentPage }">
@@ -100,7 +135,7 @@
 
     <!-- ko template: 'tpl-pager'--><!-- /ko -->
 
-    <table class="table table-striped" style="width: 75%">
+    <table class="table table-striped">
       <thead class="sorting">
         <tr>
           <!-- ko if: itemsSelectionOn -->
@@ -126,7 +161,10 @@
           <!-- /ko -->
         </tr>
       </thead>
-      <tbody data-bind="template: { name: rowTemplateId, foreach: itemsBuffer, as: 'item' }"></tbody>
+      <tfoot data-bind="foreach: sumRowsForTeplate">
+        <!-- ko template: { name: template, foreach: data, as: 'row' } --><!-- /ko  -->
+      <tfoot>
+      <tbody data-bind="template: { name: rowTemplateId, foreach: itemsBuffer, as: 'row' }"></tbody>
     </table>
 
     <!-- ko template: 'tpl-pager'--><!-- /ko -->
@@ -138,7 +176,7 @@
 
     <div>
       <ul data-bind="sortable: { data: tempColumnsConfig, options: { axis: 'y' }}" class="list-group col-sorter">
-        <li class="list-group-item">
+        <li  class="list-group-item">
           <input type="checkbox" data-bind="checked: show"/>
           <span data-bind="text: name"></span>
         </li>
