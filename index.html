@@ -15,12 +15,6 @@
 </head>
 <body>
 
-  <script type="text/html" id="tpl-cell-id">
-    <td>
-      <input data-bind="checked: $isSelected" type="checkbox"/>
-    </td>
-  </script>
-
   <script type="text/html" id="tpl-cell-name">
     <td>
       <span data-bind="text: item.name"></span>
@@ -98,8 +92,6 @@
     </div>
   </script>
 
-  <input type="checkbox" data-bind="click: selectAllItems, checked: allItemsSelected" />
-
   <div style="float: left; width: 60%">
     <h1>Seznam kampaní</h1>
 
@@ -107,8 +99,14 @@
 
     <table class="table table-striped" style="width: 75%">
       <thead class="sorting">
-        <tr data-bind="foreach: { data: columnsConfig, as: 'col'}">
-          <!-- ko if: col.show -->
+        <tr>
+          <!-- ko if: itemsSelectionOn -->
+            <th>
+              <input type="checkbox" data-bind="click: selectAllItems, checked: allItemsSelected, disable: !isRendered" />
+            </th>
+          <!-- /ko -->
+
+          <!-- ko foreach: { data: visibleColumns, as: 'col'} -->
             <th>
               <!-- ko if: col.sortable -->
                 <a data-bind="click: $root.sortBy.bind($root, col.id),
@@ -143,7 +141,7 @@
         </li>
       </ul>
 
-      <button data-bind="click: sortColumns.bind($root)" class="btn btn-default">Uložit</button>
+      <button data-bind="click: sortColumns.bind($root)" class="btn btn-success">Uložit</button>
     </div>
   </div>
 

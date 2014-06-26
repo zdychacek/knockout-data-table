@@ -11,9 +11,11 @@ connector.on('remote', function (SklikApi) {
     defaultDirection: Direction.ASC,
     lazyRendering: false,
     cellTemplatePrefix: 'tpl-cell-',
-    lazyRenderingBatchSize: 15,
-    lazyRenderingBatchDelay: 37,
-    lazyRenderingInitialCount: 60,
+    itemsSelectionOn: true,
+    tplSelectionCol: '<td><input data-bind="checked: item.$isSelected" type="checkbox"/></td>',
+    lazyRenderingBatchSize: 10,
+    lazyRenderingBatchDelay: 70,
+    lazyRenderingInitialCount: 40,
     lazyRenderingThreshold: 200
   };
 
@@ -86,6 +88,9 @@ connector.on('remote', function (SklikApi) {
     // text sablony
     this.originalRowTemplate = this.rowTemplateCnt.innerHTML;
 
+    // zda zobrazovat checkboxy pro vyber polozek
+    this.itemsSelectionOn = typeof config.itemsSelectionOn !== 'undefined' ? config.itemsSelectionOn : defaults.itemsSelectionOn;
+
     // ----------- LAZY RENDERING STUFF
     
     // mae zapnuty lazyloading?
@@ -112,6 +117,12 @@ connector.on('remote', function (SklikApi) {
       else if (!this.isRendered) {
         return 'Rendering data...';
       }
+    }, this);
+
+    ko.defineProperty(this, 'visibleColumns', function () {
+      return this.columnsConfig.filter(function (col) {
+        return col.show;
+      });
     }, this);
 
     // naveseni posluchacu
@@ -202,6 +213,10 @@ connector.on('remote', function (SklikApi) {
 
   TableViewModel.prototype.reorderTemplate = function (newConfig) {
     var strBuilder = ['<tr>'];
+
+    if (this.itemsSelectionOn) {
+      strBuilder.push(TableViewModel.defaults.tplSelectionCol);
+    }
 
     newConfig.forEach(function (item) {
       if (item.show) {
@@ -344,6 +359,12 @@ connector.on('remote', function (SklikApi) {
     });
   }
 
+  TableViewModel.prototype.getSelectedItems = function () {
+    return this.itemsBuffer.filter(function (item) {
+      return item.$isSelected;
+    });
+  }
+
   /*{
      "id":1747,
      "name":"Kampaň č. 748",
@@ -358,13 +379,6 @@ connector.on('remote', function (SklikApi) {
   }*/
 
   var columnsConfig = [
-    {
-      id: 'id',
-      name: 'ID',
-      show: true,
-      sortable: false,
-      templateId: 'tpl-cell-id'
-    },
     {
       id: 'name',
       name: 'Kampaň',
@@ -424,6 +438,7 @@ connector.on('remote', function (SklikApi) {
   var tableViewModel = window.tableViewModel = new TableViewModel({
     columnsConfig: columnsConfig,
     //defaultOrder: 'price',
+    itemsSelectionOn: true,
     defaultItemsPerPage: 500,
     defaultDirection: Direction.ASC,
     lazyRendering: true
