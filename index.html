@@ -9,6 +9,7 @@
   <script src="/js/jquery-1.9.1.js"></script>
   <script src="/js/jquery-ui.js"></script>
   <script src="/js/knockout-min.js"></script>
+  <script src="/js/extensions.js"></script>
   <script src="/js/knockout-es5.js"></script>
   <script src="/js/knockout-sortable.js"></script>
 </head>
@@ -16,7 +17,7 @@
   <script type="text/html" id="tpl-row">
     <tr>
       <td data-col="id">
-        <input type="checkbox"/>
+        <input data-bind="checked: $isSelected" type="checkbox"/>
       </td>
 
       <td data-col="name">
@@ -30,7 +31,7 @@
       </td>
 
       <td data-col="budget">
-        <span data-bind="text: item.budget"></span>
+        <span data-bind="currency: item.budget, symbol: '€'"></span>
         <!--input data-bind="value: item.budget"/-->
       </td>
 
@@ -45,22 +46,22 @@
       </td>
 
       <td data-col="ctr">
-        <span data-bind="text: item.ctr"></span>
+        <span data-bind="percent: item.ctr"></span>
         <!--input data-bind="value: item.ctr"/-->
       </td>
 
       <td data-col="cpc">
-        <span data-bind="text: item.cpc"></span>
+        <span data-bind="decimal: item.cpc"></span>
         <!--input data-bind="value: item.cpc"/-->
       </td>
 
       <td data-col="price">
-        <span data-bind="text: item.price"></span>
-        <!--input data-bind="value: item.price"/-->
+        <span data-bind="currency: item.price"></span>
+        <input data-bind="value: item.price, valueUpdate: 'afterkeydown'"/>
       </td>
 
       <td data-col="position">
-        <span data-bind="text: item.position"></span>
+        <span data-bind="decimal: item.position"></span>
         <!--input data-bind="value: item.position"/-->
       </td>
     </tr>
@@ -80,6 +81,8 @@
     </div>
   </script>
 
+  <button data-bind="click: selectAllItems" class="btn btn-default">Vybrat všechny záznamy</button>
+
   <div style="float: left; width: 60%">
     <h1>Seznam kampaní</h1>
 
@@ -90,12 +93,17 @@
         <tr data-bind="foreach: { data: columnsConfig, as: 'col'}">
           <!-- ko if: col.show -->
             <th>
-              <a data-bind="click: $root.sortBy.bind($root, col.id),
-                text: col.name,
-                css: {
-                  'glyphicon-chevron-up': col.id == $root.order &amp;&amp; $root.direction == 'SORT_ASC',
-                  'glyphicon-chevron-down': col.id == $root.order &amp;&amp; $root.direction == 'SORT_DESC' 
-                }" href="#" class="glyphicon"></a>
+              <!-- ko if: col.sortable -->
+                <a data-bind="click: $root.sortBy.bind($root, col.id),
+                  text: col.name,
+                  css: {
+                    'glyphicon-chevron-up': col.id == $root.order &amp;&amp; $root.direction == 'SORT_ASC',
+                    'glyphicon-chevron-down': col.id == $root.order &amp;&amp; $root.direction == 'SORT_DESC' 
+                  }" href="#" class="glyphicon"></a>
+              <!-- /ko -->
+              <!-- ko ifnot: col.sortable -->
+                <span data-bind="text: col.name"></span>
+              <!-- /ko -->
             </th>
           <!-- /ko -->
         </tr>

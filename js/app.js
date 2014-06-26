@@ -7,8 +7,9 @@ connector.on('remote', function (sklikApi) {
   };
 
   TableViewModel.defaults = {
+    defaultDirection: Direction.ASC,
     lazyRendering: false,
-    lazyRenderingBatchSize: 14,
+    lazyRenderingBatchSize: 13,
     lazyRenderingBatchDelay: 40,
     lazyRenderingInitialCount: 60,
     lazyRenderingThreshold: 200
@@ -35,7 +36,10 @@ connector.on('remote', function (sklikApi) {
     this.itemsPerCountList = [ 10, 20, 50, 100, 200, 500, 800, 1000 ];
 
     // aktualne na stranku
-    this.itemsPerPage = 1000;
+    this.itemsPerPage = config.defaultItemsPerPage || this.itemsPerCountList[0];
+
+    // priznak, zda jsou vybrany vsechny zaznamy v tabulce
+    this.allItemsSelected = false;
 
     // cislo aktualni stranky
     this.currentPage = 1;
@@ -43,17 +47,18 @@ connector.on('remote', function (sklikApi) {
     // pager pages
     this.pager = [];
 
-    // nazev sloupce, podle ktereho se tridi
-    this.order = 'name';
-
-    // smer razeni
-    this.direction = Direction.ASC;
-
     // kongigurace sloupcu
     this.columnsConfig = config.columnsConfig;
 
     // docasna konfigurace
     this.tempColumnsConfig = clone(this.columnsConfig);
+
+    // nazev sloupce, podle ktereho se tridi
+    // bud z configu nebo se bere prvni sortovatelny
+    this.order = config.defaultOrder || this.getFirstSortableColumn().id;
+
+    // smer razeni
+    this.direction = config.defaultDirection || defaults.defaultDirection;
 
     // priznak, zda je tabulka jiz cela dorenderovana
     this.isRendered = false;
@@ -104,8 +109,22 @@ connector.on('remote', function (sklikApi) {
     this.reorderTemplate(this.columnsConfig);
   }
 
+  TableViewModel.prototype.selectAllItems = function () {
+    var allSelected = this.allItemsSelected;
+
+    this.itemsBuffer.forEach(function (item) {
+      item.$isSelected = !allSelected;
+    });
+  }
+
+  TableViewModel.prototype.getFirstSortableColumn = function () {
+    return this.columnsConfig.filter(function (item) {
+      return item.sortable;
+    })[0];
+  }
+
   TableViewModel.prototype.attachSubscriptions = function () {
-    ko.getObservable(this, 'itemsPerPage').subscribe(function (newValue) {
+    ko.getObservable(this, 'itemsPerPage').subscribe(function () {
       this.setPage(1);
     }.bind(this));
   }
@@ -167,6 +186,10 @@ connector.on('remote', function (sklikApi) {
     sklikApi.getCampaigns(options, function (err, data) {
       this.totalCount = data.totalCount;
       this.items = data.campaigns.map(function (item) {
+        // pridani zvlastni property
+        item.$isSelected = false;
+
+        // trackovani zmen na objektu
         return ko.track(item);
       });
 
@@ -291,72 +314,74 @@ connector.on('remote', function (sklikApi) {
     {
       id: 'id',
       name: 'ID',
-      show: true
+      show: true,
+      sortable: false
     },
     {
       id: 'name',
       name: 'Kampaň',
-      show: true
+      show: true,
+      sortable: true
     },
     {
       id: 'status',
       name: 'Stav',
-      show: true
+      show: true,
+      sortable: true
     },
     {
       id: 'budget',
       name: 'Rozpočet',
-      show: true
+      show: true,
+      sortable: true
     },
     {
       id: 'clicks',
       name: 'Prokliky',
-      show: true
+      show: true,
+      sortable: true
     },
     {
       id: 'views',
       name: 'Zobrazení',
-      show: true
+      show: true,
+      sortable: true
     },
     {
       id: 'ctr',
       name: 'CTR',
-      show: true
+      show: true,
+      sortable: true
     },
     {
       id: 'cpc',
       name: 'CPC',
-      show: true
+      show: true,
+      sortable: true
     },
     {
       id: 'price',
       name: 'Cena',
-      show: true
+      show: true,
+      sortable: true
     },
     {
       id: 'position',
       name: 'Pozice',
-      show: true
+      show: true,
+      sortable: true
     }
   ];
 
   var tableViewModel = window.tableViewModel = new TableViewModel({
     rowTemplateId: 'tpl-row',
     columnsConfig: columnsConfig,
+    //defaultOrder: 'name',
+    defaultItemsPerPage: 500,
+    defaultDirection: Direction.ASC,
     lazyRendering: true
   });
 
   // nabindovani na document.body
   ko.applyBindings(tableViewModel);
 });
-
-// helpers
-ko.observableArray.fn.refresh = function () {
-  var data = this().slice(0);
-  this([]);
-  this(data);
-};
-
-function clone (obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
