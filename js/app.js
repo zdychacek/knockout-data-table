@@ -1,4 +1,4 @@
-connector.on('remote', function (sklikApi) {
+connector.on('remote', function (SklikApi) {
   'use strict';
 
   var Direction = {
@@ -115,6 +115,8 @@ connector.on('remote', function (sklikApi) {
     this.itemsBuffer.forEach(function (item) {
       item.$isSelected = !allSelected;
     });
+
+    return true;
   }
 
   TableViewModel.prototype.getFirstSortableColumn = function () {
@@ -183,7 +185,11 @@ connector.on('remote', function (sklikApi) {
     this.isDataLoaded = false;
     this.isRendered = false;
 
-    sklikApi.getCampaigns(options, function (err, data) {
+    // zrusim oznaceni vsech polozek
+    this.allItemsSelected = false;
+
+    // pozadavek na API
+    SklikApi.getCampaigns(options, function (err, data) {
       this.totalCount = data.totalCount;
       this.items = data.campaigns.map(function (item) {
         // pridani zvlastni property
@@ -377,7 +383,7 @@ connector.on('remote', function (sklikApi) {
     rowTemplateId: 'tpl-row',
     columnsConfig: columnsConfig,
     //defaultOrder: 'name',
-    defaultItemsPerPage: 500,
+    defaultItemsPerPage: 100,
     defaultDirection: Direction.ASC,
     lazyRendering: true
   });
