@@ -4,3 +4,9 @@ table {
 .col-sorter li {
 	cursor: move;
 }
+
+.alert {
+	position: fixed;
+	top: 15px;
+	right: 15px;
+}

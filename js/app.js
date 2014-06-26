@@ -6,11 +6,13 @@ connector.on('remote', function (SklikApi) {
     DESC: 'SORT_DESC'
   };
 
+  // defaultni konfigurace
   TableViewModel.defaults = {
     defaultDirection: Direction.ASC,
     lazyRendering: false,
-    lazyRenderingBatchSize: 13,
-    lazyRenderingBatchDelay: 40,
+    cellTemplatePrefix: 'tpl-cell-',
+    lazyRenderingBatchSize: 17,
+    lazyRenderingBatchDelay: 37,
     lazyRenderingInitialCount: 60,
     lazyRenderingThreshold: 200
   };
@@ -69,14 +71,17 @@ connector.on('remote', function (SklikApi) {
     // trackuj tento viewmodel
     ko.track(this);
 
+    // mapovani id sloupcu na sablonky
+    this.cellsTemplatesMap = {};
+
     // reference na underlying observable
     this.itemsBufferObservable = ko.getObservable(this, 'itemsBuffer');
 
-    // id sablony pro jeden radek
-    this.rowTemplateId = config.rowTemplateId;
-
-    // kontejner pro sablonu (script tag)
-    this.rowTemplateCnt = document.getElementById(this.rowTemplateId);
+    // unikatni id sablony radku
+    this.rowTemplateId = 'tpl-table-' + (new Date().getTime());
+    
+    // kontejner pro sablonu radku
+    this.rowTemplateCnt = this.createRowTemplateCnt(this.rowTemplateId);
 
     // text sablony
     this.originalRowTemplate = this.rowTemplateCnt.innerHTML;
@@ -102,11 +107,38 @@ connector.on('remote', function (SklikApi) {
     // naveseni posluchacu
     this.attachSubscriptions();
 
+    // namapovani idecek sloupcu na sablonky bunek
+    this.mapColumnsTemplates(this.columnsConfig);
+
     // nastavim prvni stranku
     this.setPage(1);
 
     // preskladani sloupcu
     this.reorderTemplate(this.columnsConfig);
+  }
+
+  TableViewModel.prototype.createRowTemplateCnt = function (tplId) {
+    var scriptTag = document.createElement('script');
+
+    scriptTag.id = tplId;
+    scriptTag.type = 'text/html';
+
+    return document.body.appendChild(scriptTag);
+  }
+
+  TableViewModel.prototype.mapColumnsTemplates = function (columnsConfig) {
+    var tplPrefix = TableViewModel.defaults.cellTemplatePrefix;
+
+    columnsConfig.forEach(function (col) {
+      var tplId = col.templateId || tplPrefix + col.id;
+      var tpl = document.getElementById(tplId);
+
+      if (!tpl) {
+        throw new Error('Missing template for column "' + col.id + '".');
+      }
+
+      this.cellsTemplatesMap[col.id] = tpl;
+    }, this);
   }
 
   TableViewModel.prototype.selectAllItems = function () {
@@ -159,20 +191,19 @@ connector.on('remote', function (SklikApi) {
   }
 
   TableViewModel.prototype.reorderTemplate = function (newConfig) {
-    var src = document.createElement('tbody');
-    var dest = document.createElement('tbody');
-
-    src.innerHTML = this.originalRowTemplate;
+    var strBuilder = ['<tr>'];
 
     newConfig.forEach(function (item) {
       if (item.show) {
-        var td = src.querySelector('td[data-col="' + item.id + '"]');
+        var cellTpl = this.cellsTemplatesMap[item.id];
 
-        dest.appendChild(td);
+        strBuilder.push(cellTpl.innerHTML);
       }
     }, this);
 
-    this.rowTemplateCnt.innerHTML = '<tr>' + dest.innerHTML + '</tr>';
+    strBuilder.push('</tr>');
+
+    this.rowTemplateCnt.innerHTML = strBuilder.join('');
   }
 
   TableViewModel.prototype.getRangeForPage = function (page) {
@@ -321,7 +352,8 @@ connector.on('remote', function (SklikApi) {
       id: 'id',
       name: 'ID',
       show: true,
-      sortable: false
+      sortable: false,
+      templateId: 'tpl-cell-id'
     },
     {
       id: 'name',
@@ -380,10 +412,9 @@ connector.on('remote', function (SklikApi) {
   ];
 
   var tableViewModel = window.tableViewModel = new TableViewModel({
-    rowTemplateId: 'tpl-row',
     columnsConfig: columnsConfig,
-    //defaultOrder: 'name',
-    defaultItemsPerPage: 100,
+    //defaultOrder: 'price',
+    defaultItemsPerPage: 500,
     defaultDirection: Direction.ASC,
     lazyRendering: true
   });

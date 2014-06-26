@@ -14,57 +14,74 @@
   <script src="/js/knockout-sortable.js"></script>
 </head>
 <body>
-  <script type="text/html" id="tpl-row">
-    <tr>
-      <td data-col="id">
-        <input data-bind="checked: $isSelected" type="checkbox"/>
-      </td>
 
-      <td data-col="name">
-        <span data-bind="text: item.name"></span>
-        <input data-bind="value: item.name, valueUpdate: 'afterkeydown'"/>
-      </td>
+  <script type="text/html" id="tpl-cell-id">
+    <td>
+      <input data-bind="checked: $isSelected" type="checkbox"/>
+    </td>
+  </script>
 
-      <td data-col="status">
-        <span data-bind="text: item.status"></span>
-        <!--input data-bind="value: item.status"/-->
-      </td>
+  <script type="text/html" id="tpl-cell-name">
+    <td>
+      <span data-bind="text: item.name"></span>
+      <input data-bind="value: item.name, valueUpdate: 'afterkeydown'"/>
+    </td>
+  </script>
 
-      <td data-col="budget">
-        <span data-bind="currency: item.budget, symbol: '€'"></span>
-        <!--input data-bind="value: item.budget"/-->
-      </td>
+  <script type="text/html" id="tpl-cell-status">
+    <td>
+      <span data-bind="text: item.status"></span>
+      <!--input data-bind="value: item.status"/-->
+    </td>
+  </script>
 
-      <td data-col="clicks">
-        <span data-bind="text: item.clicks"></span>
-        <!--input data-bind="value: item.clicks"/-->
-      </td>
+  <script type="text/html" id="tpl-cell-budget">
+    <td>
+      <span data-bind="currency: item.budget"></span>
+      <!--input data-bind="value: item.budget"/-->
+    </td>
+  </script>
 
-      <td data-col="views">
-        <span data-bind="text: item.views"></span>
-        <!--input data-bind="value: item.views"/-->
-      </td>
+  <script type="text/html" id="tpl-cell-clicks">
+    <td>
+      <span data-bind="text: item.clicks"></span>
+      <!--input data-bind="value: item.clicks"/-->
+    </td>
+  </script>
 
-      <td data-col="ctr">
-        <span data-bind="percent: item.ctr"></span>
-        <!--input data-bind="value: item.ctr"/-->
-      </td>
+  <script type="text/html" id="tpl-cell-views">
+    <td>
+      <span data-bind="text: item.views"></span>
+      <!--input data-bind="value: item.views"/-->
+    </td>
+  </script>
 
-      <td data-col="cpc">
-        <span data-bind="decimal: item.cpc"></span>
-        <!--input data-bind="value: item.cpc"/-->
-      </td>
+  <script type="text/html" id="tpl-cell-ctr">
+    <td>
+      <span data-bind="text: item.ctr"></span>
+      <!--input data-bind="value: item.ctr"/-->
+    </td>
+  </script>
 
-      <td data-col="price">
-        <span data-bind="currency: item.price"></span>
-        <input data-bind="value: item.price, valueUpdate: 'afterkeydown'"/>
-      </td>
+  <script type="text/html" id="tpl-cell-cpc">
+    <td>
+      <span data-bind="decimal: item.cpc"></span>
+      <!--input data-bind="value: item.cpc"/-->
+    </td>
+  </script>
 
-      <td data-col="position">
-        <span data-bind="decimal: item.position"></span>
-        <!--input data-bind="value: item.position"/-->
-      </td>
-    </tr>
+  <script type="text/html" id="tpl-cell-price">
+    <td>
+      <span data-bind="currency: item.price"></span>
+      <input data-bind="value: item.price, valueUpdate: 'afterkeydown'"/>
+    </td>
+  </script>
+
+  <script type="text/html" id="tpl-cell-position">
+    <td>
+      <span data-bind="decimal: item.position"></span>
+      <!--input data-bind="value: item.position"/-->
+    </td>
   </script>
 
   <script type="text/html" id="tpl-pager">
@@ -108,8 +125,7 @@
           <!-- /ko -->
         </tr>
       </thead>
-      <tbody data-bind="template: { name: 'tpl-row', foreach: itemsBuffer, as: 'item' }">
-      </tbody>
+      <tbody data-bind="template: { name: rowTemplateId, foreach: itemsBuffer, as: 'item' }"></tbody>
     </table>
 
     <!-- ko template: 'tpl-pager'--><!-- /ko -->
