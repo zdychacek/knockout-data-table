@@ -88,7 +88,7 @@ connector.on('remote', function (SklikApi) {
           id: 'position',
           name: 'Pozice',
           show: true,
-          sortable: true
+          sortable: false
         }
       ]
     });

@@ -10,13 +10,9 @@
     <input data-bind="value: row.name, valueUpdate: 'afterkeydown'"/>
   </td>
 
-  <td data-col="status" data-bind="switch: row.status">
-    <!-- ko case: 'STATUS_DISABLED' -->
-      <span class="glyphicon glyphicon-remove" style="color:red"></span>
-    <!-- /ko -->
-    <!-- ko case: 'STATUS_ACTIVE' -->
-      <span class="glyphicon glyphicon-ok" style="color:green"></span>
-    <!-- /ko -->
+  <td data-col="status">
+      <span data-bind="visible: row.status == 'STATUS_DISABLED'" class="glyphicon glyphicon-remove" style="color:red"></span>
+      <span data-bind="visible: row.status == 'STATUS_ACTIVE'" class="glyphicon glyphicon-ok" style="color:green"></span>
   </td>
 
   <td data-col="budget">

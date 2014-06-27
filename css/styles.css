@@ -1,5 +1,6 @@
 table {
 	margin-left: 40px;
+	width: 75%;
 }
 
 table thead th a:hover {
@@ -10,12 +11,33 @@ table tfoot tr.total td > * {
 	font-weight: bold;
 }
 
+.left-pane {
+	width: 25%;
+	float:right;
+	margin-right: 30px;
+}
+
 .col-sorter li {
 	cursor: move;
 }
 
-.alert {
+.status {
 	position: fixed;
 	top: 15px;
 	right: 15px;
+}
+
+.log {
+	position: fixed;
+	bottom: 15px;
+	right: 15px;
+	/*display: none;*/
+}
+
+.log ul {
+	padding-left: 0;
+}
+
+.log li {
+	list-style-type: none;
 }

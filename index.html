@@ -5,7 +5,7 @@
   <title>Knockout table</title>
   <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="/css/styles.css">
-  <script src="http://localhost:3000/js/bundle.js"></script>
+  <script src="http://ondrej.dev:3000/js/bundle.js"></script>
   <script src="/libs/jquery-1.9.1.js"></script>
   <script src="/libs/jquery-ui.js"></script>
   <script src="/libs/knockout-min.js"></script>
@@ -48,8 +48,11 @@
           <!-- /ko -->
         </tr>
       </thead>
-      <tfoot data-bind="foreach: sumRowsForTeplate">
-        <!-- ko template: { name: template, foreach: data, as: 'row' } --><!-- /ko  -->
+      <tfoot>
+        <!--tr><td colspan="9"></td><tr-->
+        <!-- ko foreach: sumRowsForTeplate -->
+          <!-- ko template: { name: template, foreach: data, as: 'row' } --><!-- /ko  -->
+        <!-- /ko -->
       <tfoot>
       <tbody data-bind="template: { name: rowTemplateId, foreach: itemsBuffer, as: 'row' }"></tbody>
     </table>
@@ -57,23 +60,74 @@
     <div data-bind="template: 'tpl-pager'" class="col-md-12"></div>
   </div>
 
-  <!-- columns shuffler -->
-  <div data-bind="visible: isRendered" style="float:right; padding-right: 50px;display:none">
-    <h1>Sortování sloupců</h1>
+  <div class="left-pane">
+    <h1>Konfigurace</h1>
 
+    <form class="form-horizontal" >
+      <div class="checkbox">
+        <label>
+          <input data-bind="checked: tempConfig.lazyRendering" type="checkbox"> Použít lazy rendering
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="col-sm-5 control-label">Velikost dávky (počet řádků)</label>
+        <div class="col-sm-4">
+          <input data-bind="value: tempConfig.lazyRenderingBatchSize, disable: !tempConfig.lazyRendering" type="number" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="col-sm-5 control-label">Prodleva mezi renderingem dávky (ms)</label>
+        <div class="col-sm-4">
+          <input data-bind="value: tempConfig.lazyRenderingBatchDelay, disable: !tempConfig.lazyRendering" type="number" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="col-sm-5 control-label">Počet řádků na první dobrou</label>
+        <div class="col-sm-4">
+          <input data-bind="value: tempConfig.lazyRenderingInitialCount, disable: !tempConfig.lazyRendering" type="number" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="col-sm-5 control-label">Od kolika řádků se začne používat lazy rendering (pokud je povolen)</label>
+        <div class="col-sm-4">
+          <input data-bind="value: tempConfig.lazyRenderingThreshold, disable: !tempConfig.lazyRendering" type="number" class="form-control">
+        </div>
+      </div>
+
+      <button data-bind="click: setNewConfig.bind($root)" class="btn btn-success">Nastavit</button>
+    </form>
+
+    <!-- columns shuffler -->
+    <!-- data-bind="visible: isRendered" style="display:none" -->
     <div>
-      <ul data-bind="sortable: { data: tempColumnsConfig, options: { axis: 'y' }}" class="list-group col-sorter">
-        <li  class="list-group-item">
-          <input type="checkbox" data-bind="checked: show"/>
-          <span data-bind="text: name"></span>
-        </li>
-      </ul>
+      <h3>Sortování sloupců</h3>
 
-      <button data-bind="click: sortColumns.bind($root)" class="btn btn-success">Uložit</button>
+      <div>
+        <ul data-bind="sortable: { data: tempColumnsConfig, options: { axis: 'y' }}" class="list-group col-sorter">
+          <li  class="list-group-item">
+            <input type="checkbox" data-bind="checked: show"/>
+            <span data-bind="text: name"></span>
+          </li>
+        </ul>
+
+        <button data-bind="click: sortColumns.bind($root)" class="btn btn-success">Uložit</button>
+      </div>
     </div>
   </div>
 
-  <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="alert alert-warning"></div>
+  <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="status alert alert-warning"></div>
+
+  <div data-bind="visible: eventLog.length > 0" class="log alert alert-success" style="display:none">
+    <ul data-bind="foreach: eventLog">
+      <li data-bind="html: $data"></li>
+    </ul>
+    <br/>
+    <button data-bind="click: function () { this.eventLog.removeAll() }" class="btn btn-danger">Vymazat</button>
+  </div>
 
   <script src="/js/TableViewModel.js"></script>
   <script src="/js/app.js"></script>

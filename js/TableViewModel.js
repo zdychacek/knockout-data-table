@@ -9,9 +9,8 @@
   // defaultni konfigurace
   TableViewModel.defaults = {
     defaultDirection: Direction.ASC,
-    lazyRendering: false,
     itemsSelectionOn: true,
-    tplSelectionCol: '',
+    lazyRendering: false,
     lazyRenderingBatchSize: 10,
     lazyRenderingBatchDelay: 70,
     lazyRenderingInitialCount: 40,
@@ -72,14 +71,8 @@
     // priznak, zda jsou jiz nactena vsechna data
     this.isDataLoaded = false;
 
-    // trackuj tento viewmodel
-    ko.track(this);
-
     // cache pro zkompilovane sablony
     this.compiledTemplatesCache = {};
-
-    // reference na underlying observable
-    this.itemsBufferObservable = ko.getObservable(this, 'itemsBuffer');
     
     // zda zobrazovat checkboxy pro vyber polozek
     this.itemsSelectionOn = typeof config.itemsSelectionOn !== 'undefined' ? config.itemsSelectionOn : this.getDefaults('itemsSelectionOn');
@@ -101,6 +94,25 @@
 
     // pokud je povoleno postupne renderovani, tak se zacne skutecne renderovat postupne az pri pozadavku na zobrazeni tohoto poctu dat
     this.lazyRenderingThreshold = config.lazyRenderingThreshold || this.getDefaults('lazyRenderingThreshold');
+
+    // DEBUG: 
+    this.eventLog = [];
+
+    this.tempConfig = {
+      lazyRendering: this.lazyRendering,
+      lazyRenderingBatchSize: this.lazyRenderingBatchSize,
+      lazyRenderingBatchDelay: this.lazyRenderingBatchDelay,
+      lazyRenderingInitialCount: this.lazyRenderingInitialCount,
+      lazyRenderingThreshold: this.lazyRenderingThreshold
+    };
+
+    ko.track(this.tempConfig);
+
+    // trackuj tento viewmodel
+    ko.track(this);
+
+    // reference na underlying observable
+    this.itemsBufferObservable = ko.getObservable(this, 'itemsBuffer');
 
     // definice computed vlastnosti
     this.defineComputeds();
@@ -204,6 +216,8 @@
 
     // at se pred akci stihne nadechnout UI
     setTimeout(function () {
+      this.tsRendering = new Date();
+
       // pred preskladanim sloupcu oriznu mnozinu dat
       var firstItems = this.itemsBuffer.slice(0, this.lazyRenderingInitialCount);
       this.items = this.itemsBuffer.slice(this.lazyRenderingInitialCount, this.itemsBuffer.length - 1);
@@ -220,6 +234,7 @@
 
       if (!this.lazyRendering) {
         this.isRendered = true;
+        this.logEvent('Rendering of ' + data.campaigns.length + ' items', this.tsRendering);
       }
 
       // po preskladani dorenderuji zbytek
@@ -282,8 +297,13 @@
     // zrusim oznaceni vsech polozek
     this.allItemsSelected = false;
 
+    var tsLoading = new Date();
+
     // pozadavek na API
     SklikApi.getCampaigns(options, function (err, data) {
+      // DEBUG
+      this.logEvent('Loading of ' + data.campaigns.length + ' items', tsLoading);
+
       this.isRendered = false;
       this.isDataLoaded = true;
 
@@ -305,6 +325,8 @@
         }
       }
 
+      this.tsRendering = new Date();
+
       // lazy rendering
       if (this.lazyRendering && this.items.length > this.lazyRenderingThreshold) {
         this.itemsBuffer = this.shiftItemsFromArray(this.items, this.lazyRenderingInitialCount);
@@ -317,6 +339,8 @@
       // pokud nerendrujeme lazy, tak do bufferu hodim vsechny zaznamy
       else {
         this.itemsBuffer = this.items;
+        // DEBUG
+        this.logEvent('Rendering of ' + data.campaigns.length + ' items', this.tsRendering);
         this.items = [];
         // tabulka je vyrenderovana zaraz
         this.isRendered = true;
@@ -345,6 +369,7 @@
       else {
         // tabulka je cela vyrendrovana
         this.isRendered = true;
+        this.logEvent('Rendering of ' + this.itemsBuffer.length + ' items', this.tsRendering);
       }
     }.bind(this), this.lazyRenderingBatchDelay);
   }
@@ -412,6 +437,34 @@
     return this.itemsBuffer.filter(function (item) {
       return item.$isSelected;
     });
+  }
+
+  TableViewModel.prototype.logEvent = function (msg, start) {
+    var message = '<strong>' + ((new Date() - start) / 1000) + 's:</strong> ' + msg;
+
+    this.eventLog.push(message);
+  }
+
+  TableViewModel.prototype.setNewConfig = function (config) {
+    var tempConfig = this.tempConfig;
+
+    for (var item in tempConfig) {
+      if (tempConfig.hasOwnProperty(item)) {
+        this[item] = tempConfig[item];
+      }
+    }
+
+    this.setPage();
+
+    /*
+    lazyRendering: false,
+    lazyRenderingBatchSize: 10,
+    lazyRenderingBatchDelay: 70,
+    lazyRenderingInitialCount: 40,
+    lazyRenderingThreshold: 100
+    */
+
+    //debugger;
   }
 
   // export
