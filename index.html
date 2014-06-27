@@ -20,12 +20,6 @@
   <div style="float: left; width: 60%">
     <h1>Seznam kampaní</h1>
 
-    <!--div class="progress">
-      <div class="progress-bar progress-bar-striped active" style="width: 45%">
-        <span class="sr-only">45% Complete</span>
-      </div>
-    </div-->
-
     <div data-bind="template: 'tpl-pager'" class="col-md-12"></div>
 
     <table class="table table-striped">
@@ -83,12 +77,12 @@
         </div>
       </div>
 
-      <div class="form-group">
+      <!--div class="form-group">
         <label class="col-sm-5 control-label">Prodleva mezi renderingem dávky (ms)</label>
         <div class="col-sm-4">
           <input data-bind="value: tempConfig.lazyRenderingBatchDelay, disable: !tempConfig.lazyRendering" type="number" class="form-control">
         </div>
-      </div>
+      </div-->
 
       <div class="form-group">
         <label class="col-sm-5 control-label">Počet řádků na první dobrou</label>
@@ -108,7 +102,6 @@
     </form>
 
     <!-- columns shuffler -->
-    <!-- data-bind="visible: isRendered" style="display:none" -->
     <div>
       <h3>Sortování sloupců</h3>
 
@@ -125,7 +118,7 @@
     </div>
   </div>
 
-  <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="status alert alert-warning"></div>
+  <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="status alert alert-warning" style="display:none"></div>
 
   <div data-bind="visible: eventLog.length > 0" class="log alert alert-success" style="display:none">
     <ul data-bind="foreach: eventLog">

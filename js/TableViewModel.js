@@ -11,8 +11,8 @@
     defaultDirection: Direction.ASC,
     itemsSelectionOn: true,
     lazyRendering: false,
-    lazyRenderingBatchSize: 10,
-    lazyRenderingBatchDelay: 200,
+    lazyRenderingBatchSize: 7,
+    lazyRenderingBatchDelay: 250,
     lazyRenderingInitialCount: 25,
     lazyRenderingThreshold: 100
   };
@@ -356,12 +356,44 @@
   }
 
   TableViewModel.prototype.renderBatch = function () {
-    setTimeout(function () {
-      if (!this.batchRenderingTime) {
-        var start = new Date();
-      }
+    /*setTimeout(function() {
+        if (!this.batchRenderingTime) {
+          var start = new Date();
+        }
 
+        var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchSize);
+
+        // vyrendrovani dalsi davky
+        Array.prototype.push.apply(this.itemsBuffer, batchItems);
+        this.itemsBufferObservable.valueHasMutated();
+
+        if (!this.batchRenderingTime) {
+          this.batchRenderingTime = new Date() - start;
+
+          this.logEvent('1 batch rendering', this.batchRenderingTime);
+          this.logEvent('UI idleness', this.lazyRenderingBatchDelay - this.batchRenderingTime);
+        }
+
+        this.rfaCurrCounter = 0;
+      //}
+
+      if (this.items.length) {
+        this.renderBatch();
+      }
+      else {
+        // tabulka je cela vyrendrovana
+        this.isRendered = true;
+        this.logEvent('Rendering of ' + this.itemsBuffer.length + ' items', new Date() - this.tsRendering);
+      }
+    }.bind(this), this.lazyRenderingBatchDelay);*/
+    
+    requestAnimationFrame(function () {
       var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchSize);
+      var start;
+
+      if (!this.batchRenderingTime) {
+        start = new Date();
+      }
 
       // vyrendrovani dalsi davky
       Array.prototype.push.apply(this.itemsBuffer, batchItems);
@@ -382,17 +414,11 @@
         this.isRendered = true;
         this.logEvent('Rendering of ' + this.itemsBuffer.length + ' items', new Date() - this.tsRendering);
       }
-    }.bind(this), this.lazyRenderingBatchDelay);
+    }.bind(this));
   }
 
   TableViewModel.prototype.shiftItemsFromArray = function (arr, count) {
-    var acc = [];
-
-    while (count-- && arr.length > 0) {
-      acc.push(arr.shift());
-    }
-
-    return acc;
+    return arr.splice(0, count);
   }
 
   TableViewModel.prototype.preparePager = function () {
