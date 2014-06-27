@@ -1,0 +1,50 @@
+<tr>
+  <!-- ko if: $root.itemsSelectionOn -->
+    <td data-col="selection">
+      <input data-bind="checked: row.$isSelected" type="checkbox"/>
+    </td>
+  <!-- /ko -->
+
+  <td data-col="name">
+    <span data-bind="text: row.name"></span><br/>
+    <input data-bind="value: row.name, valueUpdate: 'afterkeydown'"/>
+  </td>
+
+  <td data-col="status" data-bind="switch: row.status">
+    <!-- ko case: 'STATUS_DISABLED' -->
+      <span class="glyphicon glyphicon-remove" style="color:red"></span>
+    <!-- /ko -->
+    <!-- ko case: 'STATUS_ACTIVE' -->
+      <span class="glyphicon glyphicon-ok" style="color:green"></span>
+    <!-- /ko -->
+  </td>
+
+  <td data-col="budget">
+    <span data-bind="currency: row.budget"></span>
+  </td>
+
+  <td data-col="clicks">
+    <span data-bind="text: row.stats.clicks"></span>
+  </td>
+
+  <td data-col="views">
+    <span data-bind="text: row.stats.views"></span>
+  </td>
+
+  <td data-col="ctr">
+    <span data-bind="text: row.stats.ctr"></span>
+  </td>
+
+  <td data-col="cpc">
+    <span data-bind="decimal: row.stats.cpc"></span>
+  </td>
+
+  <td data-col="price">
+    <span data-bind="currency: row.stats.price"></span><br/>
+    <input data-bind="value: row.stats.price, valueUpdate: 'afterkeydown'"/>
+  </td>
+
+  <td data-col="position">
+    <span data-bind="decimal: row.stats.position"></span>
+  </td>
+</tr>

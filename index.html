@@ -6,134 +6,21 @@
   <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="/css/styles.css">
   <script src="http://localhost:3000/js/bundle.js"></script>
-  <script src="/js/jquery-1.9.1.js"></script>
-  <script src="/js/jquery-ui.js"></script>
-  <script src="/js/knockout-min.js"></script>
-  <script src="/js/knockout-es5.js"></script>
-  <script src="/js/knockout.es5.mapping.js"></script>
+  <script src="/libs/jquery-1.9.1.js"></script>
+  <script src="/libs/jquery-ui.js"></script>
+  <script src="/libs/knockout-min.js"></script>
+  <script src="/libs/knockout-es5.js"></script>
+  <script src="/libs/knockout.es5.mapping.js"></script>
+  <script src="/libs/knockout-sortable.js"></script>
+  <script src="/libs/knockout-switch-case.min.js"></script>
   <script src="/js/extensions.js"></script>
-  <script src="/js/knockout-sortable.js"></script>
-  <script src="/js/knockout-switch-case.min.js"></script>
 </head>
 <body>
-
-  <script type="text/html" id="tpl-table-row">
-    <tr>
-      <!-- ko if: $root.itemsSelectionOn -->
-        <td data-col="selection">
-          <input data-bind="checked: row.$isSelected" type="checkbox"/>
-        </td>
-      <!-- /ko -->
-
-      <td data-col="name">
-        <span data-bind="text: row.name"></span><br/>
-        <input data-bind="value: row.name, valueUpdate: 'afterkeydown'"/>
-      </td>
-
-      <td data-col="status" data-bind="switch: row.status">
-        <!-- ko case: 'STATUS_DISABLED' -->
-          <span class="glyphicon glyphicon-remove" style="color:red"></span>
-        <!-- /ko -->
-        <!-- ko case: 'STATUS_ACTIVE' -->
-          <span class="glyphicon glyphicon-ok" style="color:green"></span>
-        <!-- /ko -->
-      </td>
-    
-      <td data-col="budget">
-        <span data-bind="currency: row.budget"></span>
-      </td>
-    
-      <td data-col="clicks">
-        <span data-bind="text: row.stats.clicks"></span>
-      </td>
-    
-      <td data-col="views">
-        <span data-bind="text: row.stats.views"></span>
-      </td>
-    
-      <td data-col="ctr">
-        <span data-bind="text: row.stats.ctr"></span>
-      </td>
-    
-      <td data-col="cpc">
-        <span data-bind="decimal: row.stats.cpc"></span>
-      </td>
-    
-      <td data-col="price">
-        <span data-bind="currency: row.stats.price"></span><br/>
-        <input data-bind="value: row.stats.price, valueUpdate: 'afterkeydown'"/>
-      </td>
-    
-      <td data-col="position">
-        <span data-bind="decimal: row.stats.position"></span>
-      </td>
-    </tr>
-  </script>
-
-  <script type="text/html" id="tpl-table-sum-row">
-    <tr data-bind="css: { total: row.$index == 0 }">
-      <!-- ko if: $root.itemsSelectionOn -->
-        <td data-col="selection"></td>
-      <!-- /ko -->
-
-      <td data-col="name" data-bind="switch: row.$index">
-        <span data-bind="case: 0">Celkem</span>
-        <span data-bind="case: 1">Celkem Vyhledávání</span>
-        <span data-bind="case: 2">Celkem Obsah</span>
-      </td>
-
-      <td data-col="status">
-        <span>-</span>
-      </td>
-    
-      <td data-col="budget">
-        <span data-bind="currency: row.budget"></span>
-      </td>
-    
-      <td data-col="clicks">
-        <span data-bind="text: row.clicks"></span>
-      </td>
-    
-      <td data-col="views">
-        <span data-bind="text: row.views"></span>
-      </td>
-    
-      <td data-col="ctr">
-        <span data-bind="text: row.ctr"></span>
-      </td>
-    
-      <td data-col="cpc">
-        <span data-bind="decimal: row.cpc"></span>
-      </td>
-    
-      <td data-col="price">
-        <span data-bind="currency: row.price"></span>
-      </td>
-    
-      <td data-col="position">
-        <span data-bind="decimal: row.position"></span>
-      </td>
-    </tr>
-  </script>
-
-  <script type="text/html" id="tpl-pager">
-    <div class="col-md-12">
-      <!-- strankovac -->
-      <ul class="pagination" data-bind="foreach: pager">
-        <li data-bind="css: { active: $data == $root.currentPage }">
-          <a href="#" data-bind="click: $root.setPage.bind($root, $data), text: $data"></a>
-        </li>
-      </ul>
-
-      <!-- pocet zazanamu na stranku --> 
-      <select data-bind="options: itemsPerCountList, value: itemsPerPage" class="items-per-page"></select>
-    </div>
-  </script>
 
   <div style="float: left; width: 60%">
     <h1>Seznam kampaní</h1>
 
-    <!-- ko template: 'tpl-pager'--><!-- /ko -->
+    <div data-bind="template: 'tpl-pager'" class="col-md-12"></div>
 
     <table class="table table-striped">
       <thead class="sorting">
@@ -145,8 +32,8 @@
           <!-- /ko -->
 
           <!-- ko foreach: { data: visibleColumns, as: 'col'} -->
-            <th>
-              <!-- ko if: col.sortable -->
+            <th data-bind="switch: col.sortable">
+              <!-- ko case: true -->
                 <a data-bind="click: $root.sortBy.bind($root, col.id),
                   text: col.name,
                   css: {
@@ -154,7 +41,7 @@
                     'glyphicon-chevron-down': col.id == $root.order &amp;&amp; $root.direction == 'SORT_DESC' 
                   }" href="#" class="glyphicon"></a>
               <!-- /ko -->
-              <!-- ko ifnot: col.sortable -->
+              <!-- ko case: $else -->
                 <span data-bind="text: col.name"></span>
               <!-- /ko -->
             </th>
@@ -167,7 +54,7 @@
       <tbody data-bind="template: { name: rowTemplateId, foreach: itemsBuffer, as: 'row' }"></tbody>
     </table>
 
-    <!-- ko template: 'tpl-pager'--><!-- /ko -->
+    <div data-bind="template: 'tpl-pager'" class="col-md-12"></div>
   </div>
 
   <!-- columns shuffler -->
@@ -188,6 +75,7 @@
 
   <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="alert alert-warning"></div>
 
+  <script src="/js/TableViewModel.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

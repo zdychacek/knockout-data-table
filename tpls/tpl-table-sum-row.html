@@ -1,0 +1,43 @@
+<tr data-bind="css: { total: row.$index == 0 }">
+  <!-- ko if: $root.itemsSelectionOn -->
+    <td data-col="selection"></td>
+  <!-- /ko -->
+
+  <td data-col="name" data-bind="switch: row.$index">
+    <span data-bind="case: 0">Celkem</span>
+    <span data-bind="case: 1">Celkem Vyhledávání</span>
+    <span data-bind="case: 2">Celkem Obsah</span>
+  </td>
+
+  <td data-col="status">
+    <span>-</span>
+  </td>
+
+  <td data-col="budget">
+    <span data-bind="currency: row.budget"></span>
+  </td>
+
+  <td data-col="clicks">
+    <span data-bind="text: row.clicks"></span>
+  </td>
+
+  <td data-col="views">
+    <span data-bind="text: row.views"></span>
+  </td>
+
+  <td data-col="ctr">
+    <span data-bind="text: row.ctr"></span>
+  </td>
+
+  <td data-col="cpc">
+    <span data-bind="decimal: row.cpc"></span>
+  </td>
+
+  <td data-col="price">
+    <span data-bind="currency: row.price"></span>
+  </td>
+
+  <td data-col="position">
+    <span data-bind="decimal: row.position"></span>
+  </td>
+</tr>
