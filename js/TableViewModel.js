@@ -12,8 +12,8 @@
     itemsSelectionOn: true,
     lazyRendering: false,
     lazyRenderingBatchSize: 10,
-    lazyRenderingBatchDelay: 70,
-    lazyRenderingInitialCount: 40,
+    lazyRenderingBatchDelay: 200,
+    lazyRenderingInitialCount: 25,
     lazyRenderingThreshold: 100
   };
 
@@ -97,6 +97,9 @@
 
     // DEBUG: 
     this.eventLog = [];
+
+    // mereni renderingu jedne davky
+    this.batchRenderingTime = 0;
 
     this.tempConfig = {
       lazyRendering: this.lazyRendering,
@@ -234,7 +237,7 @@
 
       if (!this.lazyRendering) {
         this.isRendered = true;
-        this.logEvent('Rendering of ' + data.campaigns.length + ' items', this.tsRendering);
+        this.logEvent('Rendering of ' + this.items.length + ' items', new Date() - this.tsRendering);
       }
 
       // po preskladani dorenderuji zbytek
@@ -302,7 +305,7 @@
     // pozadavek na API
     SklikApi.getCampaigns(options, function (err, data) {
       // DEBUG
-      this.logEvent('Loading of ' + data.campaigns.length + ' items', tsLoading);
+      this.logEvent('Loading of ' + data.campaigns.length + ' items', new Date() - tsLoading);
 
       this.isRendered = false;
       this.isDataLoaded = true;
@@ -333,6 +336,7 @@
 
         // pokud jsme prave nezobrazili vse, tak zacneme rendrovat po davkach
         if (this.items.length) {
+          this.batchRenderingTime = 0;
           this.renderBatch();
         }
       }
@@ -340,7 +344,7 @@
       else {
         this.itemsBuffer = this.items;
         // DEBUG
-        this.logEvent('Rendering of ' + data.campaigns.length + ' items', this.tsRendering);
+        this.logEvent('Rendering of ' + data.campaigns.length + ' items', new Date() - this.tsRendering);
         this.items = [];
         // tabulka je vyrenderovana zaraz
         this.isRendered = true;
@@ -353,7 +357,9 @@
 
   TableViewModel.prototype.renderBatch = function () {
     setTimeout(function () {
-      //console.time('b');
+      if (!this.batchRenderingTime) {
+        var start = new Date();
+      }
 
       var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchSize);
 
@@ -361,7 +367,12 @@
       Array.prototype.push.apply(this.itemsBuffer, batchItems);
       this.itemsBufferObservable.valueHasMutated();
 
-      //console.timeEnd('b');
+      if (!this.batchRenderingTime) {
+        this.batchRenderingTime = new Date() - start;
+
+        this.logEvent('1 batch rendering', this.batchRenderingTime);
+        this.logEvent('UI idleness', this.lazyRenderingBatchDelay - this.batchRenderingTime);
+      }
 
       if (this.items.length) {
         this.renderBatch();
@@ -369,7 +380,7 @@
       else {
         // tabulka je cela vyrendrovana
         this.isRendered = true;
-        this.logEvent('Rendering of ' + this.itemsBuffer.length + ' items', this.tsRendering);
+        this.logEvent('Rendering of ' + this.itemsBuffer.length + ' items', new Date() - this.tsRendering);
       }
     }.bind(this), this.lazyRenderingBatchDelay);
   }
@@ -439,8 +450,8 @@
     });
   }
 
-  TableViewModel.prototype.logEvent = function (msg, start) {
-    var message = '<strong>' + ((new Date() - start) / 1000) + 's:</strong> ' + msg;
+  TableViewModel.prototype.logEvent = function (msg, timeInMs) {
+    var message = '<strong>' + (timeInMs / 1000) + 's:</strong> ' + msg;
 
     this.eventLog.push(message);
   }
