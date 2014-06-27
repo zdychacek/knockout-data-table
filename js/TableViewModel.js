@@ -11,7 +11,7 @@
     defaultDirection: Direction.ASC,
     itemsSelectionOn: true,
     lazyRendering: false,
-    lazyRenderingBatchSize: 7,
+    lazyRenderingBatchSize: 12,
     lazyRenderingBatchDelay: 250,
     lazyRenderingInitialCount: 25,
     lazyRenderingThreshold: 100
@@ -73,12 +73,12 @@
 
     // cache pro zkompilovane sablony
     this.compiledTemplatesCache = {};
-    
+
     // zda zobrazovat checkboxy pro vyber polozek
     this.itemsSelectionOn = typeof config.itemsSelectionOn !== 'undefined' ? config.itemsSelectionOn : this.getDefaults('itemsSelectionOn');
 
     // ----------- LAZY RENDERING STUFF
-    
+
     // mae zapnuty lazyloading?
     this.lazyRendering = config.lazyRendering || this.getDefaults('lazyRendering');
 
@@ -95,7 +95,7 @@
     // pokud je povoleno postupne renderovani, tak se zacne skutecne renderovat postupne az pri pozadavku na zobrazeni tohoto poctu dat
     this.lazyRenderingThreshold = config.lazyRenderingThreshold || this.getDefaults('lazyRenderingThreshold');
 
-    // DEBUG: 
+    // DEBUG:
     this.eventLog = [];
 
     // mereni renderingu jedne davky
@@ -156,7 +156,7 @@
       return this.sums.map(function (sumRow, index) {
         // pokud mam vice souctovych radku ale mene sablon, tak na zbyvajici pouziji prvni sablonu
         var tplIndex = this.sumRowsTemplatesIds.length > index? index : 0;
-        
+
         // pridam informaci o indexu
         sumRow.$index = index;
 
@@ -169,7 +169,7 @@
   }
 
   TableViewModel.prototype.prepareTemplates = function (config) {
-    // sablona pro radky tabulky 
+    // sablona pro radky tabulky
     this.rowTemplateId = config.rowTemplateId;
     this.compileTemplate(this.rowTemplateId);
 
@@ -321,7 +321,7 @@
 
       // data pro souctove radky
       this.sums = [];
-      
+
       for (var prop in data) {
         if (data.hasOwnProperty(prop) && prop.indexOf('sum') == 0) {
           this.sums.push(data[prop]);
@@ -356,44 +356,12 @@
   }
 
   TableViewModel.prototype.renderBatch = function () {
-    /*setTimeout(function() {
-        if (!this.batchRenderingTime) {
-          var start = new Date();
-        }
-
-        var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchSize);
-
-        // vyrendrovani dalsi davky
-        Array.prototype.push.apply(this.itemsBuffer, batchItems);
-        this.itemsBufferObservable.valueHasMutated();
-
-        if (!this.batchRenderingTime) {
-          this.batchRenderingTime = new Date() - start;
-
-          this.logEvent('1 batch rendering', this.batchRenderingTime);
-          this.logEvent('UI idleness', this.lazyRenderingBatchDelay - this.batchRenderingTime);
-        }
-
-        this.rfaCurrCounter = 0;
-      //}
-
-      if (this.items.length) {
-        this.renderBatch();
-      }
-      else {
-        // tabulka je cela vyrendrovana
-        this.isRendered = true;
-        this.logEvent('Rendering of ' + this.itemsBuffer.length + ' items', new Date() - this.tsRendering);
-      }
-    }.bind(this), this.lazyRenderingBatchDelay);*/
-    
-    requestAnimationFrame(function () {
-      var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchSize);
-      var start;
-
+    setTimeout(function() {
       if (!this.batchRenderingTime) {
-        start = new Date();
+        var start = new Date();
       }
+
+      var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchSize);
 
       // vyrendrovani dalsi davky
       Array.prototype.push.apply(this.itemsBuffer, batchItems);
@@ -401,9 +369,10 @@
 
       if (!this.batchRenderingTime) {
         this.batchRenderingTime = new Date() - start;
+        var uiIdleness = this.lazyRenderingBatchDelay - this.batchRenderingTime;
 
         this.logEvent('1 batch rendering', this.batchRenderingTime);
-        this.logEvent('UI idleness', this.lazyRenderingBatchDelay - this.batchRenderingTime);
+        this.logEvent('UI idleness', uiIdleness);
       }
 
       if (this.items.length) {
@@ -414,7 +383,7 @@
         this.isRendered = true;
         this.logEvent('Rendering of ' + this.itemsBuffer.length + ' items', new Date() - this.tsRendering);
       }
-    }.bind(this));
+    }.bind(this), this.lazyRenderingBatchDelay);
   }
 
   TableViewModel.prototype.shiftItemsFromArray = function (arr, count) {
@@ -456,7 +425,7 @@
         this.direction = Direction.DESC;
       }
       else {
-        this.direction = Direction.ASC; 
+        this.direction = Direction.ASC;
       }
     }
 

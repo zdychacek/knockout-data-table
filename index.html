@@ -5,7 +5,7 @@
   <title>Knockout table</title>
   <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="/css/styles.css">
-  <script src="http://ondrej.dev:3000/js/bundle.js"></script>
+  <script src="http://localhost:3000/js/bundle.js"></script>
   <script src="/libs/jquery-1.9.1.js"></script>
   <script src="/libs/jquery-ui.js"></script>
   <script src="/libs/knockout-min.js"></script>
@@ -38,7 +38,7 @@
                   text: col.name,
                   css: {
                     'glyphicon-chevron-up': col.id == $root.order &amp;&amp; $root.direction == 'SORT_ASC',
-                    'glyphicon-chevron-down': col.id == $root.order &amp;&amp; $root.direction == 'SORT_DESC' 
+                    'glyphicon-chevron-down': col.id == $root.order &amp;&amp; $root.direction == 'SORT_DESC'
                   }" href="#" class="glyphicon"></a>
               <!-- /ko -->
               <!-- ko case: $else -->
@@ -77,12 +77,12 @@
         </div>
       </div>
 
-      <!--div class="form-group">
+      <div class="form-group">
         <label class="col-sm-5 control-label">Prodleva mezi renderingem dávky (ms)</label>
         <div class="col-sm-4">
           <input data-bind="value: tempConfig.lazyRenderingBatchDelay, disable: !tempConfig.lazyRendering" type="number" class="form-control">
         </div>
-      </div-->
+      </div>
 
       <div class="form-group">
         <label class="col-sm-5 control-label">Počet řádků na první dobrou</label>
