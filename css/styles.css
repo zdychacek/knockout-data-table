@@ -41,3 +41,7 @@ table tfoot tr.total td > * {
 .log li {
 	list-style-type: none;
 }
+
+.items-per-page {
+	margin-top: 20px;
+}

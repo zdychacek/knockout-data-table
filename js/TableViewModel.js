@@ -1,4 +1,4 @@
-(function ($) {
+(function ($, HashManager) {
   'use strict';
 
   var Direction = TableViewModel.Direction = {
@@ -11,9 +11,9 @@
     defaultDirection: Direction.ASC,
     itemsSelectionOn: true,
     lazyRendering: false,
-    lazyRenderingBatchSize: 12,
-    lazyRenderingBatchDelay: 250,
-    lazyRenderingInitialCount: 25,
+    lazyRenderingBatchSize: 10,
+    lazyRenderingBatchDelay: 100,
+    lazyRenderingInitialCount: 30,
     lazyRenderingThreshold: 100
   };
 
@@ -248,7 +248,10 @@
   TableViewModel.prototype.compileTemplate = function (tplId) {
     var tplEl = document.getElementById(tplId);
     var cnt = document.createElement('tbody');
-    cnt.innerHTML = tplEl.innerHTML;
+    // odstraneni mezer bilych znaku mezi tagy, at se nevytvari zbytecne nody
+    cnt.innerHTML = tplEl.innerHTML
+      .replace(/(\r\n|\n|\r)/gm, '')
+      .replace(/\>[\t ]+\</g, '><');
 
     if (this.compiledTemplatesCache[tplId]) {
       return this.compiledTemplatesCache[tplId];
@@ -475,4 +478,4 @@
 
   // export
   window.TableViewModel = TableViewModel;
-})(jQuery);
+})(jQuery, HashManager);
