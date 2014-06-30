@@ -1,4 +1,4 @@
-(function ($, HashManager) {
+(function ($, Utils, HashManager) {
   'use strict';
 
   var Direction = TableViewModel.Direction = {
@@ -16,6 +16,9 @@
     lazyRenderingInitialCount: 30,
     lazyRenderingThreshold: 100
   };
+
+  // seznam idecek instanci
+  TableViewModel.instanceIds = [];
 
   /**
    * .ctor
@@ -56,7 +59,7 @@
     this.columnsConfig = config.columnsConfig;
 
     // docasna konfigurace
-    this.tempColumnsConfig = clone(this.columnsConfig);
+    this.tempColumnsConfig = Utils.clone(this.columnsConfig);
 
     // nazev sloupce, podle ktereho se tridi
     // bud z configu nebo se bere prvni sortovatelny
@@ -114,6 +117,13 @@
     // trackuj tento viewmodel
     ko.track(this);
 
+    // id instance - kvuli reakci na hashchange 
+    this.tableId = config.id;
+
+    if (!this.tableId || TableViewModel.instanceIds.indexOf(this.tableId) > -1) {
+      throw new Error('Missing table component id.');
+    }
+
     // reference na underlying observable
     this.itemsBufferObservable = ko.getObservable(this, 'itemsBuffer');
 
@@ -131,6 +141,11 @@
 
     // preskladani sloupcu
     this.reorderRowTemplate(this.columnsConfig);
+
+    // zaregistrovanoi zmeny hashe
+    //HashManager.registerKeyChange(this.tableId + '.status', this.onHashChange.bind(this));
+    HashManager.registerKeyChange(this.tableId, this.onHashChange.bind(this));
+    //HashManager.registerKeyChange('a', this.onHashChange.bind(this));
   }
 
   TableViewModel.prototype.defineComputeds = function () {
@@ -227,7 +242,7 @@
       this.itemsBuffer = firstItems;
 
       this.columnsConfig = this.tempColumnsConfig;
-      this.tempColumnsConfig = clone(this.tempColumnsConfig);
+      this.tempColumnsConfig = Utils.clone(this.tempColumnsConfig);
 
       this.reorderRowTemplate(this.columnsConfig);
 
@@ -464,18 +479,12 @@
     }
 
     this.setPage();
+  }
 
-    /*
-    lazyRendering: false,
-    lazyRenderingBatchSize: 10,
-    lazyRenderingBatchDelay: 70,
-    lazyRenderingInitialCount: 40,
-    lazyRenderingThreshold: 100
-    */
-
-    //debugger;
+  TableViewModel.prototype.onHashChange = function (changes) {
+    console.log('table on hashchange:', changes);
   }
 
   // export
   window.TableViewModel = TableViewModel;
-})(jQuery, HashManager);
+})(jQuery, Utils, HashManager);

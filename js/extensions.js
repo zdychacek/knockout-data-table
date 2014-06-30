@@ -8,12 +8,7 @@
 
   // some exports and renaming
   ko.deepTrack = ko.es5.mapping.track;
-  window.clone = clone;
-
-  function clone (obj) {
-    return JSON.parse(JSON.stringify(obj));
-  }
-
+  
   // shortcut
   var bindings = ko.bindingHandlers;
 

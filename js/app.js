@@ -28,6 +28,7 @@ connector.on('remote', function (SklikApi) {
 
   function bootstrapApp () {
     window.tableViewModel = new TableViewModel({
+      id: 'campaigns-list',
       rowTemplateId: 'tpl-table-row',
       sumRowsTemplatesIds: 'tpl-table-sum-row',
       //defaultOrder: 'price',
@@ -95,6 +96,8 @@ connector.on('remote', function (SklikApi) {
 
     // nabindovani na document.body
     ko.applyBindings(tableViewModel);
+
+    HashManager.init();
   }
 
   // load templates and bootstrap app
