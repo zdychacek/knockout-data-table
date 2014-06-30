@@ -1,6 +1,6 @@
 (function (Utils) {
   'use strict';
-  
+
   var DiffType = HashManager.DiffType = {
     CREATED: 'created',
     UPDATED: 'updated',
@@ -21,6 +21,31 @@
     }.bind(this), false);
   }
 
+  HashManager.prototype.serializeState = function () {
+    var fragBuffer = [];
+
+    for (var masterKey in this.state) {
+      var masterValue = this.state[masterKey];
+
+      if (Utils.isObject(masterValue)) {
+        var subsBuffer = [];
+
+        for (var subKey in masterValue) {
+          var subValue = masterValue[subKey];
+
+          subsBuffer.push(subKey + ':' + subValue);
+        }
+
+        fragBuffer.push(masterKey + '=' + subsBuffer.join(';'));
+      }
+      else {
+        fragBuffer.push(masterKey + '=' + masterValue);
+      }
+    }
+
+    return fragBuffer.join('&');
+  }
+
   HashManager.prototype.init = function () {
     this.onHashChange(document.location.href, document.location.href);
   }
@@ -29,8 +54,11 @@
     this.listeners[key] = cb;
   }
 
-  HashManager.prototype.setKey = function (key) {
+  HashManager.prototype.set = function (str, val) {
 
+
+    this.silentChange(this.serializeState());
+    //this.triggerChanges(oldState, this.state);
   }
 
   HashManager.prototype.silentChange = function (hash) {
@@ -48,18 +76,14 @@
     var oldUrl = this.parseHashFragmentFromUrl(oldUrl);
     var newState = this.parseFragment(newUrl);
 
-    var diff = this.compareStates(this.state, newState);
-
-    //console.log(diff);
-
-    this.triggerChanges(diff);
-    
-    //console.log('old:', this.state, 'new:', newState, 'diff:', diff);
+    this.triggerChanges(this.state, newState);
 
     this.state = newState;
   }
 
-  HashManager.prototype.triggerChanges = function (diff) {
+  HashManager.prototype.triggerChanges = function (oldState, newState) {
+    var diff = this.compareStates(oldState, newState);
+
     for (var key in this.listeners) {
       if (this.listeners.hasOwnProperty(key)) {
         var changes = this.collectKeyChanges(key, diff);
@@ -75,27 +99,31 @@
     var pathParts = key.split('.');
     var changes = [];
 
-    (function traverse (currObj, key, change) {
-      var obj = currObj[key];
+    (function traverse (diff, key, change) {
+      var obj = diff[key];
+
+      if (typeof obj === 'undefined') {
+        return;
+      }
 
       if (obj.type) {
         change = obj.type;
         obj = obj.value;
       }
 
-      if (typeof obj !== 'object') {
-        if (change !== 'unchanged') {
-          currObj[key].key = key;
-          changes.push(currObj[key]);
+      if (!Utils.isObject(obj)) {
+        if (change !== DiffType.UNCHANGED) {
+          diff[key].key = key;
+          changes.push(diff[key]);
         }
       }
       else {
         for (var prop in obj) {
-          if (typeof obj[prop] == 'object') {
+          if (Utils.isObject(obj[prop])) {
             traverse(obj, prop, change);
           }
           else {
-            if (change !== 'unchanged') {
+            if (change !== DiffType.UNCHANGED) {
               changes.push({
                 key: prop,
                 type: change,
@@ -118,8 +146,8 @@
   }
 
   // ?status=active&sorting.orderColumn=status&sorting.direction=ASC&dateSelect=week
-  
-  // #table1=status:active;order:name;direction:ASC&foo=28&bar=98
+
+  // #campaigns-list=status:active;order:name;direction:ASC&foo=28&bar=98
   HashManager.prototype.parseFragment = function (fragment) {
     if (!fragment) {
       return {};
@@ -147,7 +175,6 @@
     var key = keyValuePair[0];
 
     if (keyValuePair.length == 2) {
-
       result[key] = this.parseSubValue(keyValuePair[1]);
     }
     else {
@@ -156,22 +183,20 @@
   }
 
   HashManager.prototype.parseSubValue = function (value) {
+    var ret = {};
+
     if (value.indexOf(';') > -1) {
       var values = value.split(';');
-      var ret = {};
 
       for (var i = 0, l = values.length; i < l; i++) {
         var keyValuePair = values[i].split(':');
-
         var key = keyValuePair[0];
         var value = keyValuePair[1];
 
         if (keyValuePair.length == 2) {
-          ret[key] = keyValuePair[1];
+          ret[key] = value;
         }
       }
-
-      return ret;
     }
     else {
       var keyValuePair = value.split(':');
@@ -180,17 +205,17 @@
         return keyValuePair[0];
       }
       else {
-        var ret = {};
         var key = keyValuePair[0];
         var value = keyValuePair[1];
 
         if (keyValuePair.length == 2) {
-          ret[key] = keyValuePair[1];
+          ret[key] = value;
         }
 
-        return ret;
       }
     }
+
+    return ret;
   }
 
   HashManager.prototype.compareStates = function (obj1, obj2) {
@@ -205,7 +230,6 @@
       if (obj1 === obj2) {
         diffType = DiffType.UNCHANGED;
         ret.value = obj1;
-        //return obj1;
       }
       else if (typeof obj1 === 'undefined') {
         diffType = DiffType.CREATED;
@@ -217,38 +241,39 @@
       }
       else {
         diffType = DiffType.UPDATED;
+        ret.value = obj2;
         ret.oldValue = obj1;
-        ret.newValue = obj2;
       }
 
       ret.type = diffType;
 
       return ret;
     }
-    
+
     var diff = {};
 
     for (var key in obj1) {
       if (Utils.isFunction(obj1[key])) {
         continue;
       }
-      
-      var value2 = undefined;
 
-      if ('undefined' != typeof(obj2[key])) {
+      var value2;
+
+      if (typeof obj2[key] !== 'undefined') {
         value2 = obj2[key];
       }
-      
+
       diff[key] = this.compareStates(obj1[key], value2);
     }
+
     for (var key in obj2) {
-      if (Utils.isFunction(obj2[key]) || ('undefined' != typeof diff[key])) {
+      if (Utils.isFunction(obj2[key]) || typeof diff[key] !== 'undefined') {
         continue;
       }
-      
+
       diff[key] = this.compareStates(undefined, obj2[key]);
     }
-    
+
     return diff;
   }
 

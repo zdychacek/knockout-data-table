@@ -33,7 +33,7 @@ connector.on('remote', function (SklikApi) {
       sumRowsTemplatesIds: 'tpl-table-sum-row',
       //defaultOrder: 'price',
       itemsSelectionOn: true,
-      defaultItemsPerPage: 500,
+      defaultItemsPerPage: 50,
       defaultDirection: TableViewModel.Direction.ASC,
       lazyRendering: true,
       columnsConfig: [

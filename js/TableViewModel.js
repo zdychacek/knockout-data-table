@@ -117,7 +117,7 @@
     // trackuj tento viewmodel
     ko.track(this);
 
-    // id instance - kvuli reakci na hashchange 
+    // id instance - kvuli reakci na hashchange
     this.tableId = config.id;
 
     if (!this.tableId || TableViewModel.instanceIds.indexOf(this.tableId) > -1) {
@@ -134,7 +134,7 @@
     this.attachSubscriptions();
 
     // nastavim prvni stranku
-    this.setPage(1);
+    //this.setPage(1);
 
     // priprava sablon
     this.prepareTemplates(config);
@@ -418,6 +418,11 @@
     }
   }
 
+  TableViewModel.prototype.setPageFromPager = function (pageNum) {
+    //HashManager.set(this.tableId + '.page', pageNum);
+    this.setPage(pageNum);
+  }
+
   TableViewModel.prototype.setPage = function (pageNum) {
     pageNum || (pageNum = this.currentPage);
 
@@ -482,7 +487,16 @@
   }
 
   TableViewModel.prototype.onHashChange = function (changes) {
+    var page = changes.page;
+
     console.log('table on hashchange:', changes);
+
+    if (page && page.value) {
+      this.setPage(page.value);
+    }
+    else {
+      this.setPage(1);
+    }
   }
 
   // export

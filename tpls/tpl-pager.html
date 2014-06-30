@@ -1,11 +1,11 @@
 <!-- strankovac -->
 <ul class="pagination" data-bind="foreach: pager">
 <li data-bind="css: { active: $data == $root.currentPage }">
-  <a href="#" data-bind="click: $root.setPage.bind($root, $data), text: $data"></a>
+  <a href="#" data-bind="click: $root.setPageFromPager.bind($root, $data), text: $data"></a>
 </li>
 </ul>
 
-<!-- pocet zazanamu na stranku --> 
+<!-- pocet zazanamu na stranku -->
 <div class=col-md-2>
   <select data-bind="options: itemsPerCountList, value: itemsPerPage" class="items-per-page form-control"></select>
 </div>
