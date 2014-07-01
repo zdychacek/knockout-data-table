@@ -145,8 +145,9 @@
     var oldUrl = this._parseHashFragmentFromUrl(oldUrl);
     var newState = this._parseFragment(newUrl);
 
+    // callbacky musi byt odpaleny po navratu z teto funkce, aby z nich bylo mozne pristupovat k novemu stavu 
     setTimeout(this._triggerChanges.bind(this, this._state, newState), 0);
-    
+
     this._state = newState;
   }
 
@@ -283,76 +284,61 @@
 
   HashManager.prototype._compareStates = function (obj1, obj2) {
     if (Utils.isFunction(obj1) || Utils.isFunction(obj2)) {
-        throw 'Invalid argument. Function given, object expected.';
+      throw new Error('Invalid argument. Function given, object expected.');
     }
+
     if (Utils.isValue(obj1) || Utils.isValue(obj2)) {
-        return this._compareValues(obj1, obj2);
+      return this._compareValues(obj1, obj2);
     }
     
     var diff = {};
+
     for (var key in obj1) {
-        if (Utils.isFunction(obj1[key])) {
-            continue;
-        }
-        
-        var value2 = undefined;
-        if ('undefined' != typeof(obj2[key])) {
-            value2 = obj2[key];
-        }
-        
-        diff[key] = this._compareStates(obj1[key], value2);
+      if (Utils.isFunction(obj1[key])) {
+        continue;
+      }
+      
+      var value2 = undefined;
+
+      if ('undefined' != typeof obj2[key]) {
+        value2 = obj2[key];
+      }
+      
+      diff[key] = this._compareStates(obj1[key], value2);
     }
+
     for (var key in obj2) {
-        if (Utils.isFunction(obj2[key]) || ('undefined' != typeof(diff[key]))) {
-            continue;
-        }
-        
-        diff[key] = this._compareStates(undefined, obj2[key]);
+      if (Utils.isFunction(obj2[key]) || ('undefined' != typeof diff[key])) {
+        continue;
+      }
+      
+      diff[key] = this._compareStates(undefined, obj2[key]);
     }
     
     return diff;
   }
 
-  /*
-  if (obj1 === obj2) {
-    diffType = DiffType.Unchanged;
-    ret.value = obj1;
-  }
-  else if (typeof obj1 === 'undefined') {
-    diffType = DiffType.Created;
-    ret.value = obj2;
-  }
-  else if (typeof obj2 === 'undefined') {
-    diffType = DiffType.Deleted;
-    ret.oldValue = obj1;
-  }
-  else {
-    diffType = DiffType.Updated;
-    ret.value = obj2;
-    ret.oldValue = obj1;
-  }
-   */
-
   HashManager.prototype._compareValues = function (value1, value2) {
     var ret = {};
-    var type;
 
     if (value1 === value2) {
-        type = DiffType.Unchanged;;
+      ret.type = DiffType.Unchanged;
+      ret.value = value1;
     }
     else if ('undefined' == typeof(value1)) {
-        type = DiffType.Created;
+      ret.type = DiffType.Created;
+      ret.value = value2;
     }
     else if ('undefined' == typeof(value2)) {
-        type = DiffType.Deleted;
+      ret.type = DiffType.Deleted;
+      ret.value = value1;
     }
     else {
-      type = DiffType.Updated;
+      ret.type = DiffType.Updated;
+      ret.value = value2;
+      ret.oldValue = value1;
     }
 
-    ret.type = type;
-    ret.value = value2 || value1;
-    
     return ret;
   }
 
