@@ -224,7 +224,7 @@
 
   TableViewModel.prototype.attachSubscriptions = function () {
     ko.getObservable(this, 'itemsPerPage').subscribe(function (value) {
-      this.setPage(1);
+      HashManager.set([this.tableId, 'itemsPerPage'], value);
     }.bind(this));
   }
 
@@ -489,16 +489,18 @@
     var itemsPerPage = values.itemsPerPage;
 
     console.log('table on hashchange:', values);
-
-    var getVaĺue = HashManager.get([ this.tableId, 'order' ]);
-
-    console.log(getVaĺue);
     
-    if (page && page.value) {
-      this.setPage(page.value);
+    if (itemsPerPage && itemsPerPage.type == 'updated') {
+      this.itemsPerPage = itemsPerPage.value;
+      this.setPage(1);
     }
     else {
-      this.setPage(1);
+      if (page && page.value) {
+        this.setPage(page.value);
+      }
+      else {
+        this.setPage(1);
+      }
     }
   }
 
