@@ -123,6 +123,9 @@
     if (!this.tableId || TableViewModel.instanceIds.indexOf(this.tableId) > -1) {
       throw new Error('Missing table component id.');
     }
+    else {
+      TableViewModel.instanceIds.push(this.tableId);
+    }
 
     // reference na underlying observable
     this.itemsBufferObservable = ko.getObservable(this, 'itemsBuffer');
@@ -133,9 +136,6 @@
     // naveseni posluchacu
     this.attachSubscriptions();
 
-    // nastavim prvni stranku
-    //this.setPage(1);
-
     // priprava sablon
     this.prepareTemplates(config);
 
@@ -145,7 +145,6 @@
     // zaregistrovanoi zmeny hashe
     //HashManager.registerKeyChange(this.tableId + '.status', this.onHashChange.bind(this));
     HashManager.registerKeyChange(this.tableId, this.onHashChange.bind(this));
-    //HashManager.registerKeyChange('a', this.onHashChange.bind(this));
   }
 
   TableViewModel.prototype.defineComputeds = function () {
@@ -419,8 +418,7 @@
   }
 
   TableViewModel.prototype.setPageFromPager = function (pageNum) {
-    //HashManager.set(this.tableId + '.page', pageNum);
-    this.setPage(pageNum);
+    HashManager.set([ this.tableId, 'page' ], pageNum);
   }
 
   TableViewModel.prototype.setPage = function (pageNum) {
@@ -486,10 +484,14 @@
     this.setPage();
   }
 
-  TableViewModel.prototype.onHashChange = function (changes) {
-    var page = changes.page;
+  TableViewModel.prototype.onHashChange = function (values) {
+    var page = values.page;
 
-    console.log('table on hashchange:', changes);
+    console.log('table on hashchange:', values);
+
+    //console.log(HashManager.get([ this.tableId, 'order']));
+
+    //HashManager.remove([ this.tableId, 'order']);
 
     if (page && page.value) {
       this.setPage(page.value);

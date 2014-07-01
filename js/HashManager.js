@@ -1,31 +1,32 @@
 (function (Utils) {
   'use strict';
 
-  var DiffType = HashManager.DiffType = {
-    CREATED: 'created',
-    UPDATED: 'updated',
-    DELETED: 'deleted',
-    UNCHANGED: 'unchanged'
-  } ;
+  var DiffType = {
+    Created: 'created',
+    Updated: 'updated',
+    Deleted: 'deleted',
+    Unchanged: 'unchanged'
+  };
 
   function HashManager () {
-    this.state = {};
-    this.listeners = {};
+    this._state = {};
+    this._listeners = {};
 
     this._silentChangeLock = false;
 
     window.addEventListener('hashchange', function (e) {
       if (!this._silentChangeLock) {
-        this.onHashChange(e.oldURL, e.newURL);
+        this._onHashChange(e.oldURL, e.newURL);
       }
     }.bind(this), false);
   }
 
-  HashManager.prototype.serializeState = function () {
+  HashManager.prototype._serializeState = function (obj) {
     var fragBuffer = [];
+    obj || (obj = this._state);
 
-    for (var masterKey in this.state) {
-      var masterValue = this.state[masterKey];
+    for (var masterKey in obj) {
+      var masterValue = obj[masterKey];
 
       if (Utils.isObject(masterValue)) {
         var subsBuffer = [];
@@ -47,18 +48,78 @@
   }
 
   HashManager.prototype.init = function () {
-    this.onHashChange(document.location.href, document.location.href);
+    this._onHashChange(document.location.href, document.location.href);
   }
 
   HashManager.prototype.registerKeyChange = function (key, cb) {
-    this.listeners[key] = cb;
+    this._listeners[key] = cb;
   }
 
-  HashManager.prototype.set = function (str, val) {
+  HashManager.prototype.set = function (path, val) {
+    var pathParts = this._normalizePath(path);
+    var oldState = Utils.clone(this._state);
+    var newState = Utils.clone(this._state);
+    var curr = null;
 
+    for (var i = 0, l = pathParts.length - 1; i < l; i++) {
+      var currPath = pathParts[i];
 
-    this.silentChange(this.serializeState());
-    //this.triggerChanges(oldState, this.state);
+      curr = newState[currPath] = oldState[currPath] || {};
+    }
+
+    curr[pathParts.pop()] = val.toString();
+
+    this.setHash(this._serializeState(newState));
+  }
+
+  HashManager.prototype.remove = function (path) {
+    var pathParts = this._normalizePath(path);
+    var newState = Utils.clone(this._state);
+    var curr = null;
+
+    for (var i = 0, l = pathParts.length - 1; i < l; i++) {
+      var currPath = pathParts[i];
+
+      curr = newState[currPath];
+
+      if (typeof curr === 'undefined') {
+        return null;
+      }
+    }
+
+    var propToDelete = pathParts.pop();
+
+    if (typeof curr[propToDelete] !== 'undefined') {
+      delete curr[propToDelete];
+
+      this.setHash(this._serializeState(newState));
+    }
+  }
+
+  HashManager.prototype.get = function (path) {
+    var pathParts = this._normalizePath(path);
+    var curr = this._state;
+
+    for (var i = 0, l = pathParts.length - 1; i < l; i++) {
+      var currPath = pathParts[i];
+
+      curr = this._state[currPath];
+
+      if (typeof curr === 'undefined') {
+        return null;
+      }
+    }
+
+    return curr[pathParts.pop()];
+  }
+
+  HashManager.prototype._normalizePath = function (path) {
+    if (Array.isArray(path)) {
+      return path;
+    }
+    else {
+      return path.split('.');
+    }
   }
 
   HashManager.prototype.silentChange = function (hash) {
@@ -71,31 +132,37 @@
     this._silentChangeLock = false;
   }
 
-  HashManager.prototype.onHashChange = function (oldUrl, newUrl) {
-    var newUrl = this.parseHashFragmentFromUrl(newUrl);
-    var oldUrl = this.parseHashFragmentFromUrl(oldUrl);
-    var newState = this.parseFragment(newUrl);
+  HashManager.prototype.setHash = function (hash) {
+    if (hash[0] != '#') {
+      hash = '#' + hash;
+    }
 
-    this.triggerChanges(this.state, newState);
-
-    this.state = newState;
+    document.location.hash = hash;
   }
 
-  HashManager.prototype.triggerChanges = function (oldState, newState) {
-    var diff = this.compareStates(oldState, newState);
+  HashManager.prototype._onHashChange = function (oldUrl, newUrl) {
+    var newUrl = this._parseHashFragmentFromUrl(newUrl);
+    var oldUrl = this._parseHashFragmentFromUrl(oldUrl);
+    var newState = this._parseFragment(newUrl);
 
-    for (var key in this.listeners) {
-      if (this.listeners.hasOwnProperty(key)) {
-        var changes = this.collectKeyChanges(key, diff);
+    //setTimeout(this._triggerChanges.bind(this, this._state, newState), 0);
+    this._triggerChanges(this._state, newState)
+    this._state = newState;
+  }
 
-        this.listeners[key](changes);
+  HashManager.prototype._triggerChanges = function (oldState, newState) {
+    var diff = this._compareStates(oldState, newState);
+
+    for (var key in this._listeners) {
+      if (this._listeners.hasOwnProperty(key)) {
+        var changes = this._collectKeyChanges(key, diff);
+
+        this._listeners[key](changes);
       }
     }
   }
 
-  // TODO: brutal refactoring
-  // {"campaign-list":{"value":{"status":"noactive","order":"name"},"type":"created"}}
-  HashManager.prototype.collectKeyChanges = function (key, diff) {
+  HashManager.prototype._collectKeyChanges = function (key, diff) {
     var pathParts = key.split('.');
     var changes = [];
 
@@ -112,10 +179,8 @@
       }
 
       if (!Utils.isObject(obj)) {
-        if (change !== DiffType.UNCHANGED) {
-          diff[key].key = key;
-          changes.push(diff[key]);
-        }
+        diff[key].key = key;
+        changes.push(diff[key]);
       }
       else {
         for (var prop in obj) {
@@ -123,13 +188,11 @@
             traverse(obj, prop, change);
           }
           else {
-            if (change !== DiffType.UNCHANGED) {
-              changes.push({
-                key: prop,
-                type: change,
-                value: obj[prop]
-              });
-            }
+            changes.push({
+              key: prop,
+              type: change,
+              value: obj[prop]
+            });
           }
         }
       }
@@ -146,9 +209,9 @@
   }
 
   // ?status=active&sorting.orderColumn=status&sorting.direction=ASC&dateSelect=week
-
+  // ->
   // #campaigns-list=status:active;order:name;direction:ASC&foo=28&bar=98
-  HashManager.prototype.parseFragment = function (fragment) {
+  HashManager.prototype._parseFragment = function (fragment) {
     if (!fragment) {
       return {};
     }
@@ -160,7 +223,7 @@
       for (var i = 0, l = masterValues.length; i < l; i++) {
         var masterValue = masterValues[i];
 
-        this.parseMasterValue(masterValue, result);
+        this._parseMasterValue(masterValue, result);
       }
     }
     else {
@@ -170,19 +233,19 @@
     return result;
   }
 
-  HashManager.prototype.parseMasterValue = function (value, result) {
+  HashManager.prototype._parseMasterValue = function (value, result) {
     var keyValuePair = value.split('=');
     var key = keyValuePair[0];
 
     if (keyValuePair.length == 2) {
-      result[key] = this.parseSubValue(keyValuePair[1]);
+      result[key] = this._parseSubValue(keyValuePair[1]);
     }
     else {
       console.log('No value assigned to key ' + key);
     }
   }
 
-  HashManager.prototype.parseSubValue = function (value) {
+  HashManager.prototype._parseSubValue = function (value) {
     var ret = {};
 
     if (value.indexOf(';') > -1) {
@@ -218,7 +281,7 @@
     return ret;
   }
 
-  HashManager.prototype.compareStates = function (obj1, obj2) {
+  HashManager.prototype._compareStates = function (obj1, obj2) {
     if (Utils.isFunction(obj1) || Utils.isFunction(obj2)) {
       throw new Error('Invalid argument. Function given, object expected.');
     }
@@ -228,19 +291,19 @@
       var ret = {};
 
       if (obj1 === obj2) {
-        diffType = DiffType.UNCHANGED;
+        diffType = DiffType.Unchanged;
         ret.value = obj1;
       }
       else if (typeof obj1 === 'undefined') {
-        diffType = DiffType.CREATED;
+        diffType = DiffType.Created;
         ret.value = obj2;
       }
       else if (typeof obj2 === 'undefined') {
-        diffType = DiffType.DELETED;
+        diffType = DiffType.Deleted;
         ret.oldValue = obj1;
       }
       else {
-        diffType = DiffType.UPDATED;
+        diffType = DiffType.Updated;
         ret.value = obj2;
         ret.oldValue = obj1;
       }
@@ -263,7 +326,7 @@
         value2 = obj2[key];
       }
 
-      diff[key] = this.compareStates(obj1[key], value2);
+      diff[key] = this._compareStates(obj1[key], value2);
     }
 
     for (var key in obj2) {
@@ -271,13 +334,13 @@
         continue;
       }
 
-      diff[key] = this.compareStates(undefined, obj2[key]);
+      diff[key] = this._compareStates(undefined, obj2[key]);
     }
 
     return diff;
   }
 
-  HashManager.prototype.parseHashFragmentFromUrl = function (url) {
+  HashManager.prototype._parseHashFragmentFromUrl = function (url) {
     var hashCharPos = url.indexOf('#');
 
     if (hashCharPos > -1) {
@@ -287,6 +350,8 @@
       return '';
     }
   }
+
+  HashManager.DiffType = DiffType;
 
   window.HashManager = new HashManager();
 })(Utils);
