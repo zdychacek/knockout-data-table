@@ -9,7 +9,7 @@
   };
 
   function HashManager () {
-    this._state = {};
+    this._state = null;
     this._listeners = {};
 
     this._silentChangeLock = false;
@@ -48,6 +48,7 @@
   }
 
   HashManager.prototype.init = function () {
+    this._state = this._parseFragment(document.location.hash.replace('#', ''));
     this._onHashChange(document.location.href, document.location.href);
   }
 
@@ -55,21 +56,22 @@
     this._listeners[key] = cb;
   }
 
-  HashManager.prototype.set = function (path, val) {
+  HashManager.prototype.set = function (path, val, silently) {
     var pathParts = this._normalizePath(path);
-    var oldState = Utils.clone(this._state);
     var newState = Utils.clone(this._state);
     var curr = null;
 
     for (var i = 0, l = pathParts.length - 1; i < l; i++) {
       var currPath = pathParts[i];
 
-      curr = newState[currPath] = oldState[currPath] || {};
+      curr = newState[currPath] || (newState[currPath] = {});
     }
 
     curr[pathParts.pop()] = val.toString();
 
-    this.setHash(this._serializeState(newState));
+    var hash = this._serializeState(newState);
+
+    this.setHash(hash, silently);
   }
 
   HashManager.prototype.remove = function (path) {
@@ -122,22 +124,20 @@
     }
   }
 
-  HashManager.prototype.silentChange = function (hash) {
+  HashManager.prototype.setHash = function (hash, silent) {
     if (hash[0] != '#') {
       hash = '#' + hash;
     }
 
-    this._silentChangeLock = true;
-    document.location.hash = hash;
-    this._silentChangeLock = false;
-  }
-
-  HashManager.prototype.setHash = function (hash) {
-    if (hash[0] != '#') {
-      hash = '#' + hash;
+    if (silent) {
+      this._silentChangeLock = true;
     }
 
     document.location.hash = hash;
+
+    if (silent) {
+      this._silentChangeLock = false;
+    }
   }
 
   HashManager.prototype._onHashChange = function (oldUrl, newUrl) {
@@ -145,8 +145,8 @@
     var oldUrl = this._parseHashFragmentFromUrl(oldUrl);
     var newState = this._parseFragment(newUrl);
 
-    //setTimeout(this._triggerChanges.bind(this, this._state, newState), 0);
-    this._triggerChanges(this._state, newState)
+    setTimeout(this._triggerChanges.bind(this, this._state, newState), 0);
+    
     this._state = newState;
   }
 
@@ -283,61 +283,77 @@
 
   HashManager.prototype._compareStates = function (obj1, obj2) {
     if (Utils.isFunction(obj1) || Utils.isFunction(obj2)) {
-      throw new Error('Invalid argument. Function given, object expected.');
+        throw 'Invalid argument. Function given, object expected.';
     }
-
     if (Utils.isValue(obj1) || Utils.isValue(obj2)) {
-      var diffType = null;
-      var ret = {};
-
-      if (obj1 === obj2) {
-        diffType = DiffType.Unchanged;
-        ret.value = obj1;
-      }
-      else if (typeof obj1 === 'undefined') {
-        diffType = DiffType.Created;
-        ret.value = obj2;
-      }
-      else if (typeof obj2 === 'undefined') {
-        diffType = DiffType.Deleted;
-        ret.oldValue = obj1;
-      }
-      else {
-        diffType = DiffType.Updated;
-        ret.value = obj2;
-        ret.oldValue = obj1;
-      }
-
-      ret.type = diffType;
-
-      return ret;
+        return this._compareValues(obj1, obj2);
     }
-
+    
     var diff = {};
-
     for (var key in obj1) {
-      if (Utils.isFunction(obj1[key])) {
-        continue;
-      }
-
-      var value2;
-
-      if (typeof obj2[key] !== 'undefined') {
-        value2 = obj2[key];
-      }
-
-      diff[key] = this._compareStates(obj1[key], value2);
+        if (Utils.isFunction(obj1[key])) {
+            continue;
+        }
+        
+        var value2 = undefined;
+        if ('undefined' != typeof(obj2[key])) {
+            value2 = obj2[key];
+        }
+        
+        diff[key] = this._compareStates(obj1[key], value2);
     }
-
     for (var key in obj2) {
-      if (Utils.isFunction(obj2[key]) || typeof diff[key] !== 'undefined') {
-        continue;
-      }
+        if (Utils.isFunction(obj2[key]) || ('undefined' != typeof(diff[key]))) {
+            continue;
+        }
+        
+        diff[key] = this._compareStates(undefined, obj2[key]);
+    }
+    
+    return diff;
+  }
 
-      diff[key] = this._compareStates(undefined, obj2[key]);
+  /*
+  if (obj1 === obj2) {
+    diffType = DiffType.Unchanged;
+    ret.value = obj1;
+  }
+  else if (typeof obj1 === 'undefined') {
+    diffType = DiffType.Created;
+    ret.value = obj2;
+  }
+  else if (typeof obj2 === 'undefined') {
+    diffType = DiffType.Deleted;
+    ret.oldValue = obj1;
+  }
+  else {
+    diffType = DiffType.Updated;
+    ret.value = obj2;
+    ret.oldValue = obj1;
+  }
+   */
+
+  HashManager.prototype._compareValues = function (value1, value2) {
+    var ret = {};
+    var type;
+
+    if (value1 === value2) {
+        type = DiffType.Unchanged;;
+    }
+    else if ('undefined' == typeof(value1)) {
+        type = DiffType.Created;
+    }
+    else if ('undefined' == typeof(value2)) {
+        type = DiffType.Deleted;
+    }
+    else {
+      type = DiffType.Updated;
     }
 
-    return diff;
+    ret.type = type;
+    ret.value = value2 || value1;
+    
+    return ret;
   }
 
   HashManager.prototype._parseHashFragmentFromUrl = function (url) {

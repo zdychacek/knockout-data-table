@@ -223,7 +223,7 @@
   }
 
   TableViewModel.prototype.attachSubscriptions = function () {
-    ko.getObservable(this, 'itemsPerPage').subscribe(function () {
+    ko.getObservable(this, 'itemsPerPage').subscribe(function (value) {
       this.setPage(1);
     }.bind(this));
   }
@@ -486,19 +486,24 @@
 
   TableViewModel.prototype.onHashChange = function (values) {
     var page = values.page;
+    var itemsPerPage = values.itemsPerPage;
 
     console.log('table on hashchange:', values);
 
-    //console.log(HashManager.get([ this.tableId, 'order']));
+    var getVaĺue = HashManager.get([ this.tableId, 'order' ]);
 
-    //HashManager.remove([ this.tableId, 'order']);
-
+    console.log(getVaĺue);
+    
     if (page && page.value) {
       this.setPage(page.value);
     }
     else {
       this.setPage(1);
     }
+  }
+
+  TableViewModel.prototype.test = function () {
+    HashManager.remove([this.tableId, 'order']);
   }
 
   // export
