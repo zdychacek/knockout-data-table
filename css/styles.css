@@ -42,6 +42,11 @@ table tfoot tr.total td > * {
 	list-style-type: none;
 }
 
-.items-per-page {
-	margin-top: 20px;
+.pager-cnt {
+	padding-left: 40px;
+	padding-bottom: 15px;
+}
+
+.pagination {
+	margin: 0;
 }

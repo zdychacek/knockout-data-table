@@ -1,3 +1,9 @@
+// TODO:
+// - pouzivat hashbang !#, kvuli odskrolovani na element
+// - vytahnout konfiguraci oddelovacu hodnot v ve fragmentu
+// - pridat moznost registrace zmeny primo "podhodnoty", napr. "campaigns-list=itemsPerPage:50" (nyni je mozne se nahadnout jen na master hodnotu - "campaigns-list")
+// - zrefaktorovat (hlavne parsovaci funkce)
+// - podpora pro pole napr. campaigns-list=selectedIds:1,2,3
 (function (Utils) {
   'use strict';
 
@@ -9,15 +15,12 @@
   };
 
   function HashManager () {
-    this._state = null;
+    this._state = {};
     this._listeners = {};
-
     this._silentChangeLock = false;
 
     window.addEventListener('hashchange', function (e) {
-      if (!this._silentChangeLock) {
-        this._onHashChange(e.oldURL, e.newURL);
-      }
+      this._onHashChange(e.oldURL, e.newURL);
     }.bind(this), false);
   }
 
@@ -48,17 +51,17 @@
   }
 
   HashManager.prototype.init = function () {
-    this._state = this._parseFragment(document.location.hash.replace('#', ''));
     this._onHashChange(document.location.href, document.location.href);
   }
 
-  HashManager.prototype.registerKeyChange = function (key, cb) {
-    this._listeners[key] = cb;
+  HashManager.prototype.registerStateChange = function (key, cb) {
+    if (Utils.isFunction(cb)) {
+      this._listeners[key] = cb;
+    }
   }
 
-  HashManager.prototype.set = function (path, val, silently) {
+  HashManager.prototype._setOneItem = function (path, val, silently, newState) {
     var pathParts = this._normalizePath(path);
-    var newState = Utils.clone(this._state);
     var curr = null;
 
     for (var i = 0, l = pathParts.length - 1; i < l; i++) {
@@ -68,6 +71,14 @@
     }
 
     curr[pathParts.pop()] = val.toString();
+  }
+
+  HashManager.prototype.set = function (paths, vals, silently) {
+    var newState = Utils.clone(this._state);
+
+    for (var i = 0, l = paths.length; i < l; i++) {
+      this._setOneItem(paths[i], vals[i], !!silently, newState);
+    }
 
     var hash = this._serializeState(newState);
 
@@ -129,15 +140,9 @@
       hash = '#' + hash;
     }
 
-    if (silent) {
-      this._silentChangeLock = true;
-    }
+    this._silentChangeLock = !!silent;
 
     document.location.hash = hash;
-
-    if (silent) {
-      this._silentChangeLock = false;
-    }
   }
 
   HashManager.prototype._onHashChange = function (oldUrl, newUrl) {
@@ -145,8 +150,12 @@
     var oldUrl = this._parseHashFragmentFromUrl(oldUrl);
     var newState = this._parseFragment(newUrl);
 
-    // callbacky musi byt odpaleny po navratu z teto funkce, aby z nich bylo mozne pristupovat k novemu stavu 
-    setTimeout(this._triggerChanges.bind(this, this._state, newState), 0);
+    if (!this._silentChangeLock) {
+      // callbacky musi byt odpaleny po navratu z teto funkce, aby z nich bylo mozne pristupovat k novemu stavu
+      setTimeout(this._triggerChanges.bind(this, this._state, newState), 0);
+    }
+
+    this._silentChangeLock = false;
 
     this._state = newState;
   }
@@ -179,7 +188,7 @@
         obj = obj.value;
       }
 
-      if (!Utils.isObject(obj)) {
+      if (!Utils.isObject(obj) && change != DiffType.Unchanged) {
         diff[key].key = key;
         changes.push(diff[key]);
       }
@@ -188,7 +197,7 @@
           if (Utils.isObject(obj[prop])) {
             traverse(obj, prop, change);
           }
-          else {
+          else if (change != DiffType.Unchanged) {
             changes.push({
               key: prop,
               type: change,
@@ -353,7 +362,8 @@
     }
   }
 
-  HashManager.DiffType = DiffType;
+  HashManager.prototype.DiffType = DiffType;
 
+  // je to jedinacek
   window.HashManager = new HashManager();
 })(Utils);

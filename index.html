@@ -5,9 +5,10 @@
   <title>Knockout table</title>
   <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="/css/styles.css">
-  <script src="http://localhost:3000/js/bundle.js"></script>
+  <script src="http://ondrej.dev:3000/js/bundle.js"></script>
   <script src="/libs/jquery-1.9.1.js"></script>
   <script src="/libs/jquery-ui.js"></script>
+  <script src="/libs/bootstrap.min.js"></script>
   <script src="/libs/knockout-min.js"></script>
   <script src="/libs/knockout-es5.js"></script>
   <script src="/libs/knockout.es5.mapping.js"></script>
@@ -20,9 +21,9 @@
   <div style="float: left; width: 60%">
     <h1>Seznam kampaní</h1>
 
-    <button data-bind="click: test" class="btn btn-default">Test button</button>
+    <!--button data-bind="click: test" class="btn btn-default">Test button</button-->
 
-    <div data-bind="template: 'tpl-pager'" class="col-md-12"></div>
+    <div data-bind="template: 'tpl-pager'" class="row pager-cnt"></div>
 
     <table class="table table-striped">
       <thead class="sorting">
@@ -59,7 +60,7 @@
       <tbody data-bind="template: { name: rowTemplateId, foreach: itemsBuffer, as: 'row' }"></tbody>
     </table>
 
-    <div data-bind="template: 'tpl-pager'" class="col-md-12"></div>
+    <div data-bind="template: 'tpl-pager'" class="row pager-cnt"></div>
   </div>
 
   <div class="left-pane">

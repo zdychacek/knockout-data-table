@@ -1,11 +1,18 @@
-<!-- pocet zazanamu na stranku -->
-<div class="col-md-2">
-  <select data-bind="options: itemsPerCountList, value: itemsPerPage" class="items-per-page form-control"></select>
+<div class="btn-group col-md-1">
+	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+	  <span data-bind="text: itemsPerPage"></span>
+	  <span class="caret"></span>
+	</button>
+	<ul data-bind="foreach: itemsPerCountList" class="dropdown-menu" role="menu">
+	  <li>
+	  	<a data-bind="text: $data, click: $root.setItemsPerPage.bind($root)" href="#"></a>
+	  </li>
+	</ul>
 </div>
 
 <!-- strankovac -->
 <ul class="pagination col-md-10" data-bind="foreach: pager">
   <li data-bind="css: { active: $data == $root.currentPage }">
-    <a href="#" data-bind="click: $root.setPageFromPager.bind($root, $data), text: $data"></a>
+    <a href="#" data-bind="click: $root.setPage.bind($root, $data), text: $data"></a>
   </li>
 </ul>

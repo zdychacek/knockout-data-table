@@ -63,10 +63,10 @@
 
     // nazev sloupce, podle ktereho se tridi
     // bud z configu nebo se bere prvni sortovatelny
-    this.order = config.defaultOrder || this.getFirstSortableColumn().id;
+    this.order = config.defaultOrder || this._getFirstSortableColumn().id;
 
     // smer razeni
-    this.direction = config.defaultDirection || this.getDefaults('defaultDirection');
+    this.direction = config.defaultDirection || this._getDefaults('defaultDirection');
 
     // priznak, zda je tabulka jiz cela dorenderovana
     this.isRendered = false;
@@ -78,31 +78,28 @@
     this.compiledTemplatesCache = {};
 
     // zda zobrazovat checkboxy pro vyber polozek
-    this.itemsSelectionOn = typeof config.itemsSelectionOn !== 'undefined' ? config.itemsSelectionOn : this.getDefaults('itemsSelectionOn');
+    this.itemsSelectionOn = typeof config.itemsSelectionOn !== 'undefined' ? config.itemsSelectionOn : this._getDefaults('itemsSelectionOn');
 
     // ----------- LAZY RENDERING STUFF
 
     // mae zapnuty lazyloading?
-    this.lazyRendering = config.lazyRendering || this.getDefaults('lazyRendering');
+    this.lazyRendering = config.lazyRendering || this._getDefaults('lazyRendering');
 
     // pocet radku vykreslovanych v ramci jedne davky
-    this.lazyRenderingBatchSize = config.lazyRenderingBatchSize || this.getDefaults('lazyRenderingBatchSize');
+    this.lazyRenderingBatchSize = config.lazyRenderingBatchSize || this._getDefaults('lazyRenderingBatchSize');
 
     // prodlevy pred vykreslenim dalsi davky
     this.lazyRenderingBatchDelay = typeof config.lazyRenderingBatchDelay !== 'undefined'?
-      config.lazyRenderingBatchDelay : this.getDefaults('lazyRenderingBatchDelay');
+      config.lazyRenderingBatchDelay : this._getDefaults('lazyRenderingBatchDelay');
 
     // pocet radku vyrendrovanych na prvni dobrou
-    this.lazyRenderingInitialCount = config.lazyRenderingInitialCount || this.getDefaults('lazyRenderingInitialCount');
+    this.lazyRenderingInitialCount = config.lazyRenderingInitialCount || this._getDefaults('lazyRenderingInitialCount');
 
     // pokud je povoleno postupne renderovani, tak se zacne skutecne renderovat postupne az pri pozadavku na zobrazeni tohoto poctu dat
-    this.lazyRenderingThreshold = config.lazyRenderingThreshold || this.getDefaults('lazyRenderingThreshold');
+    this.lazyRenderingThreshold = config.lazyRenderingThreshold || this._getDefaults('lazyRenderingThreshold');
 
     // DEBUG:
     this.eventLog = [];
-
-    // mereni renderingu jedne davky
-    this.batchRenderingTime = 0;
 
     this.tempConfig = {
       lazyRendering: this.lazyRendering,
@@ -120,6 +117,10 @@
     // id instance - kvuli reakci na hashchange
     this.tableId = config.id;
 
+    // defaultni nastaveni
+    this.defaultDirection = this.direction;
+    this.defaultOrder = this.order;
+
     if (!this.tableId || TableViewModel.instanceIds.indexOf(this.tableId) > -1) {
       throw new Error('Missing table component id.');
     }
@@ -133,18 +134,14 @@
     // definice computed vlastnosti
     this.defineComputeds();
 
-    // naveseni posluchacu
-    this.attachSubscriptions();
-
     // priprava sablon
-    this.prepareTemplates(config);
+    this._prepareTemplates(config);
 
     // preskladani sloupcu
-    this.reorderRowTemplate(this.columnsConfig);
+    this._reorderRowTemplate(this.columnsConfig);
 
-    // zaregistrovanoi zmeny hashe
-    //HashManager.registerKeyChange(this.tableId + '.status', this.onHashChange.bind(this));
-    HashManager.registerKeyChange(this.tableId, this.onHashChange.bind(this));
+    // zaregistrovani zmeny hashe
+    HashManager.registerStateChange(this.tableId, this.onHashStateChange.bind(this));
   }
 
   TableViewModel.prototype.defineComputeds = function () {
@@ -182,10 +179,14 @@
     }, this);
   }
 
-  TableViewModel.prototype.prepareTemplates = function (config) {
+  TableViewModel.prototype.setItemsPerPage = function (value) {
+    this.setHashState('itemsPerPage', value);
+  }
+
+  TableViewModel.prototype._prepareTemplates = function (config) {
     // sablona pro radky tabulky
     this.rowTemplateId = config.rowTemplateId;
-    this.compileTemplate(this.rowTemplateId);
+    this._compileTemplate(this.rowTemplateId);
 
     // sablony pro souctove radky
     this.sumRowsTemplatesIds = config.sumRowsTemplatesIds;
@@ -194,10 +195,10 @@
       this.sumRowsTemplatesIds = [ config.sumRowsTemplatesIds ];
     }
 
-    this.sumRowsTemplatesIds.forEach(this.compileTemplate, this);
+    this.sumRowsTemplatesIds.forEach(this._compileTemplate, this);
   }
 
-  TableViewModel.prototype.getDefaults = function (key) {
+  TableViewModel.prototype._getDefaults = function (key) {
     if (key) {
       return this.constructor.defaults[key];
     }
@@ -216,16 +217,10 @@
     return true;
   }
 
-  TableViewModel.prototype.getFirstSortableColumn = function () {
+  TableViewModel.prototype._getFirstSortableColumn = function () {
     return this.columnsConfig.filter(function (item) {
       return item.sortable;
     })[0];
-  }
-
-  TableViewModel.prototype.attachSubscriptions = function () {
-    ko.getObservable(this, 'itemsPerPage').subscribe(function (value) {
-      HashManager.set([this.tableId, 'itemsPerPage'], value);
-    }.bind(this));
   }
 
   TableViewModel.prototype.sortColumns = function () {
@@ -243,7 +238,7 @@
       this.columnsConfig = this.tempColumnsConfig;
       this.tempColumnsConfig = Utils.clone(this.tempColumnsConfig);
 
-      this.reorderRowTemplate(this.columnsConfig);
+      this._reorderRowTemplate(this.columnsConfig);
 
       // force rerenderingu
       ko.getObservable(this, 'itemsBuffer').refresh();
@@ -255,11 +250,11 @@
       }
 
       // po preskladani dorenderuji zbytek
-      this.renderBatch();
+      this._renderBatch();
     }.bind(this), 0);
   }
 
-  TableViewModel.prototype.compileTemplate = function (tplId) {
+  TableViewModel.prototype._compileTemplate = function (tplId) {
     var tplEl = document.getElementById(tplId);
     var cnt = document.createElement('tbody');
     // odstraneni mezer bilych znaku mezi tagy, at se nevytvari zbytecne nody
@@ -280,7 +275,7 @@
     return cnt;
   }
 
-  TableViewModel.prototype.reorderRowTemplate = function (columnsConfig) {
+  TableViewModel.prototype._reorderRowTemplate = function (columnsConfig) {
     for (var tplId in this.compiledTemplatesCache) {
       var src = this.compiledTemplatesCache[tplId].cloneNode(true);
       var dest = document.createElement('tbody');
@@ -306,10 +301,10 @@
     }
   }
 
-  TableViewModel.prototype.getRangeForPage = function (page) {
-    page = page || this.currentPage;
+  TableViewModel.prototype._getRangeForPage = function (page, itemsPerPage) {
+    itemsPerPage || (itemsPerPage = this.itemsPerPage);
 
-    return [ (page - 1) * this.itemsPerPage, this.itemsPerPage ];
+    return [ (page - 1) * itemsPerPage, itemsPerPage ];
   }
 
   TableViewModel.prototype.loadCampaigns = function (options) {
@@ -349,12 +344,12 @@
 
       // lazy rendering
       if (this.lazyRendering && this.items.length > this.lazyRenderingThreshold) {
-        this.itemsBuffer = this.shiftItemsFromArray(this.items, this.lazyRenderingInitialCount);
+        this.itemsBuffer = this.items.splice(0, this.lazyRenderingInitialCount);
 
         // pokud jsme prave nezobrazili vse, tak zacneme rendrovat po davkach
         if (this.items.length) {
           this.batchRenderingTime = 0;
-          this.renderBatch();
+          this._renderBatch();
         }
       }
       // pokud nerendrujeme lazy, tak do bufferu hodim vsechny zaznamy
@@ -368,32 +363,20 @@
       }
 
       // priprav data pro vykresleni pageru
-      this.preparePager();
+      this._preparePager();
     }.bind(this));
   }
 
-  TableViewModel.prototype.renderBatch = function () {
+  TableViewModel.prototype._renderBatch = function () {
     setTimeout(function() {
-      if (!this.batchRenderingTime) {
-        var start = new Date();
-      }
-
-      var batchItems = this.shiftItemsFromArray(this.items, this.lazyRenderingBatchSize);
+      var batchItems = this.items.splice(0, this.lazyRenderingBatchSize);
 
       // vyrendrovani dalsi davky
       Array.prototype.push.apply(this.itemsBuffer, batchItems);
       this.itemsBufferObservable.valueHasMutated();
 
-      if (!this.batchRenderingTime) {
-        this.batchRenderingTime = new Date() - start;
-        var uiIdleness = this.lazyRenderingBatchDelay - this.batchRenderingTime;
-
-        this.logEvent('1 batch rendering', this.batchRenderingTime);
-        this.logEvent('UI idleness', uiIdleness);
-      }
-
       if (this.items.length) {
-        this.renderBatch();
+        this._renderBatch();
       }
       else {
         // tabulka je cela vyrendrovana
@@ -403,12 +386,8 @@
     }.bind(this), this.lazyRenderingBatchDelay);
   }
 
-  TableViewModel.prototype.shiftItemsFromArray = function (arr, count) {
-    return arr.splice(0, count);
-  }
-
-  TableViewModel.prototype.preparePager = function () {
-    var pagesCount = Math.ceil(this.totalCount / this.itemsPerPage);
+  TableViewModel.prototype._preparePager = function () {
+    var pagesCount = this.getTotalPagesCount();
 
     this.pager.removeAll();
 
@@ -417,47 +396,32 @@
     }
   }
 
-  TableViewModel.prototype.setPageFromPager = function (pageNum) {
-    HashManager.set([ this.tableId, 'page' ], pageNum);
+  TableViewModel.prototype.getTotalPagesCount = function () {
+    return Math.ceil(this.totalCount / this.itemsPerPage);
   }
 
-  TableViewModel.prototype.setPage = function (pageNum) {
-    pageNum || (pageNum = this.currentPage);
-
-    var range = this.getRangeForPage(pageNum);
-
-    this.currentPage = pageNum;
-
-    this.loadCampaigns({
-      order: this.order,
-      direction: this.direction,
-      offset: range[0],
-      limit: range[1]
-    });
+  TableViewModel.prototype.setPage = function (pageNum, force) {
+    this.setHashState('page', pageNum);
   }
 
   TableViewModel.prototype.sortBy = function (newOrder) {
+    var order = this.order;
+    var direction = Direction.ASC;
+
     if (newOrder != this.order) {
-      this.order = newOrder;
-      this.direction = Direction.ASC;
+      order = newOrder;
     }
     else {
       if (this.direction == Direction.ASC) {
-        this.direction = Direction.DESC;
+        direction = Direction.DESC;
       }
       else {
-        this.direction = Direction.ASC;
+        direction = Direction.ASC;
       }
     }
 
-    var range = this.getRangeForPage(1);
-
-    this.loadCampaigns({
-      order: this.order,
-      direction: this.direction,
-      offset: range[0],
-      limit: range[1]
-    });
+    // TODO:
+    HashManager.set([ [this.tableId, 'order'], [this.tableId, 'direction'] ], [ order, direction ]);
   }
 
   TableViewModel.prototype.getSelectedItems = function () {
@@ -467,9 +431,7 @@
   }
 
   TableViewModel.prototype.logEvent = function (msg, timeInMs) {
-    var message = '<strong>' + (timeInMs / 1000) + 's:</strong> ' + msg;
-
-    this.eventLog.push(message);
+    this.eventLog.push('<strong>' + (timeInMs / 1000) + 's:</strong> ' + msg);
   }
 
   TableViewModel.prototype.setNewConfig = function (config) {
@@ -481,31 +443,67 @@
       }
     }
 
-    this.setPage();
+    this.setPage(this.currentPage, true);
   }
 
-  TableViewModel.prototype.onHashChange = function (values) {
-    var page = values.page;
-    var itemsPerPage = values.itemsPerPage;
+  TableViewModel.prototype.setHashState = function (key, value, silent) {
+    HashManager.set([ [this.tableId, key] ], [value], silent);
+  }
 
-    console.log('table on hashchange:', values);
-    
-    if (itemsPerPage && itemsPerPage.type == 'updated') {
-      this.itemsPerPage = itemsPerPage.value;
-      this.setPage(1);
-    }
-    else {
-      if (page && page.value) {
-        this.setPage(page.value);
+  TableViewModel.prototype.onHashStateChange = function (changes) {
+    var pageValue = changes.page && changes.page.value;
+    var itemsPerPageValue = changes.itemsPerPage && changes.itemsPerPage.value;
+    var orderValue = changes.order && changes.order.value;
+    var directionValue = changes.direction && changes.direction.value;
+
+    //console.log('TableViewModel#onHashStateChange:', changes);
+
+    if (pageValue) {
+      if (changes.page.type == 'deleted') {
+        this.currentPage = 1;
       }
       else {
-        this.setPage(1);
+        this.currentPage = pageValue;
       }
     }
-  }
+    
+    if (itemsPerPageValue) {
+      this.itemsPerPage = itemsPerPageValue;
 
-  TableViewModel.prototype.test = function () {
-    HashManager.remove([this.tableId, 'order']);
+      if (!pageValue) {
+        this.currentPage = 1;
+        this.setHashState('page', 1, true);
+      }
+    }
+
+    if (orderValue) {
+      if (changes.order.type == 'deleted') {
+        this.order = this.defaultOrder;
+      }
+      else {
+        this.order = orderValue;
+      }
+    }
+
+    if (directionValue) {
+      if (changes.direction.type == 'deleted') {
+        this.direction = this.defaultDirection;
+      }
+      else {
+        this.direction = directionValue;
+      }
+    }
+
+    var range = this._getRangeForPage(this.currentPage);
+
+    var params = {
+      order: this.order,
+      direction: this.direction,
+      offset: range[0],
+      limit: range[1]
+    };
+
+    this.loadCampaigns(params);
   }
 
   // export
