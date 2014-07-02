@@ -131,8 +131,10 @@
     // reference na underlying observable
     this.itemsBufferObservable = ko.getObservable(this, 'itemsBuffer');
 
+    this.renderBatchTimer = null;
+
     // definice computed vlastnosti
-    this.defineComputeds();
+    this._defineComputeds();
 
     // priprava sablon
     this._prepareTemplates(config);
@@ -144,7 +146,7 @@
     HashManager.registerStateChange(this.tableId, this.onHashStateChange.bind(this));
   }
 
-  TableViewModel.prototype.defineComputeds = function () {
+  TableViewModel.prototype._defineComputeds = function () {
     // stavova informace o nacitani dat a rendrovani
     ko.defineProperty(this, 'systemStatus', function () {
       if (!this.isDataLoaded) {
@@ -207,6 +209,13 @@
     }
   }
 
+  TableViewModel.prototype._clearRenderBatchTimout = function () {
+    if (this.renderBatchTimer) {
+      clearTimeout(this.renderBatchTimer);
+      this.renderBatchTimer = null;
+    }
+  }
+
   TableViewModel.prototype.selectAllItems = function () {
     var allSelected = this.allItemsSelected;
 
@@ -225,6 +234,8 @@
 
   TableViewModel.prototype.sortColumns = function () {
     this.isRendered = false;
+
+    this._clearRenderBatchTimout();
 
     // at se pred akci stihne nadechnout UI
     setTimeout(function () {
@@ -258,9 +269,9 @@
     var tplEl = document.getElementById(tplId);
     var cnt = document.createElement('tbody');
     // odstraneni mezer bilych znaku mezi tagy, at se nevytvari zbytecne nody
-    cnt.innerHTML = tplEl.innerHTML
+    $(cnt).html((tplEl.innerHTML || tplEl.text)
       .replace(/(\r\n|\n|\r)/gm, '')
-      .replace(/\>[\t ]+\</g, '><');
+      .replace(/\>[\t ]+\</g, '><'));
 
     if (this.compiledTemplatesCache[tplId]) {
       return this.compiledTemplatesCache[tplId];
@@ -275,7 +286,7 @@
     return cnt;
   }
 
-  TableViewModel.prototype._reorderRowTemplate = function (columnsConfig) {
+  TableViewModel.prototype._reorderRowTemplate = function (columnsConfig) {    
     for (var tplId in this.compiledTemplatesCache) {
       var src = this.compiledTemplatesCache[tplId].cloneNode(true);
       var dest = document.createElement('tbody');
@@ -296,8 +307,9 @@
       dest.appendChild(rowEl);
 
       var container = document.getElementById(tplId);
+
       // nastavim text nove sablony
-      container.innerHTML = dest.innerHTML;
+      container.text = $(dest).html();
     }
   }
 
@@ -313,6 +325,8 @@
     this.allItemsSelected = false;
 
     var tsLoading = new Date();
+
+    this._clearRenderBatchTimout();
 
     // pozadavek na API
     SklikApi.getCampaigns(options, function (err, data) {
@@ -340,10 +354,10 @@
         }
       }
 
-      this.tsRendering = new Date();
-
       // lazy rendering
       if (this.lazyRendering && this.items.length > this.lazyRenderingThreshold) {
+        this.tsRendering = new Date();
+
         this.itemsBuffer = this.items.splice(0, this.lazyRenderingInitialCount);
 
         // pokud jsme prave nezobrazili vse, tak zacneme rendrovat po davkach
@@ -354,6 +368,8 @@
       }
       // pokud nerendrujeme lazy, tak do bufferu hodim vsechny zaznamy
       else {
+        this.tsRendering = new Date();
+
         this.itemsBuffer = this.items;
         // DEBUG
         this.logEvent('Rendering of ' + data.campaigns.length + ' items', new Date() - this.tsRendering);
@@ -368,7 +384,7 @@
   }
 
   TableViewModel.prototype._renderBatch = function () {
-    setTimeout(function() {
+    this.renderBatchTimer = setTimeout(function() {
       var batchItems = this.items.splice(0, this.lazyRenderingBatchSize);
 
       // vyrendrovani dalsi davky
@@ -443,7 +459,18 @@
       }
     }
 
-    this.setPage(this.currentPage, true);
+    this.reload();
+  }
+
+  TableViewModel.prototype.reload = function () {
+    var range = this._getRangeForPage(this.currentPage);
+
+    this.loadCampaigns({
+      order: this.order,
+      direction: this.direction,
+      offset: range[0],
+      limit: range[1]
+    });
   }
 
   TableViewModel.prototype.setHashState = function (key, value, silent) {

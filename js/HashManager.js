@@ -18,9 +18,10 @@
     this._state = {};
     this._listeners = {};
     this._silentChangeLock = false;
+    this._oldUrl = '';
 
     window.addEventListener('hashchange', function (e) {
-      this._onHashChange(e.oldURL, e.newURL);
+      this._onHashChange(this._oldUrl, document.location.href);
     }.bind(this), false);
   }
 
@@ -51,6 +52,7 @@
   }
 
   HashManager.prototype.init = function () {
+    this._oldUrl = document.location.href;
     this._onHashChange(document.location.href, document.location.href);
   }
 
@@ -155,8 +157,9 @@
       setTimeout(this._triggerChanges.bind(this, this._state, newState), 0);
     }
 
-    this._silentChangeLock = false;
+    this._oldUrl = newUrl;
 
+    this._silentChangeLock = false;
     this._state = newState;
   }
 

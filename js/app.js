@@ -14,7 +14,13 @@ connector.on('remote', function (SklikApi) {
 
         tplContainer.id = tpl.replace('.html', '');
         tplContainer.type = 'text/html';
-        tplContainer.innerHTML = data;
+        
+        if (tplContainer.innerHTML) {
+          tplContainer.innerHTML = data;
+        }
+        else {
+          tplContainer.text = data;
+        }
 
         docFrag.appendChild(tplContainer);
 
