@@ -27,18 +27,18 @@ table tfoot tr.total td > * {
 	right: 15px;
 }
 
-.log {
+.appLogger {
 	position: fixed;
 	bottom: 15px;
 	right: 15px;
 	/*display: none;*/
 }
 
-.log ul {
+.appLogger ul {
 	padding-left: 0;
 }
 
-.log li {
+.appLogger li {
 	list-style-type: none;
 }
 
