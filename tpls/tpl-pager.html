@@ -3,11 +3,13 @@
 	  <span data-bind="text: itemsPerPage"></span>
 	  <span class="caret"></span>
 	</button>
-	<ul data-bind="foreach: itemsPerCountList" class="dropdown-menu" role="menu">
+	<ul data-bind="foreach: itemsPerPageCountList" class="dropdown-menu" role="menu">
 	  <li>
 	  	<a data-bind="text: $data, click: $root.setItemsPerPage.bind($root)" href="#"></a>
 	  </li>
 	</ul>
+
+	<select data-bind="options: itemsPerPageCountList, value: itemsPerPageTemp" class="appPaginatorSelect"></select>
 </div>
 
 <!-- strankovac -->

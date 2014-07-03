@@ -4,6 +4,7 @@
 // - pridat moznost registrace zmeny primo "podhodnoty", napr. "campaigns-list=itemsPerPage:50" (nyni je mozne se nahadnout jen na master hodnotu - "campaigns-list")
 // - zrefaktorovat (hlavne parsovaci funkce)
 // - podpora pro pole napr. campaigns-list=selectedIds:1,2,3
+// - poresit triggrovani calbacku v pripade zadnych zmen
 (function (Utils) {
   'use strict';
 
@@ -147,6 +148,10 @@
     document.location.hash = hash;
   }
 
+  HashManager.prototype.getHash = function () {
+    return this._parseHashFragmentFromUrl(document.location.hash);
+  }
+
   HashManager.prototype._onHashChange = function (newUrl) {
     var newUrl = this._parseHashFragmentFromUrl(newUrl);
     var oldUrl = this._parseHashFragmentFromUrl(this._oldUrl);
@@ -170,7 +175,7 @@
       if (this._listeners.hasOwnProperty(key)) {
         var changes = this._collectKeyChanges(key, diff);
 
-        changes && this._listeners[key](changes);
+        this._listeners[key](changes);
       }
     }
   }
@@ -211,20 +216,15 @@
       }
     })(diff, key);
 
-    if (changes.length) {
-      var changesMap = {};
+    var changesMap = {};
 
-      // transformace do "lepe citelne" formy
-      changes.forEach(function (item) {
-        changesMap[item.key] = item;
-        delete item.key;
-      });
-      
-      return changesMap;
-    }
-    else {
-      return null;
-    }
+    // transformace do "lepe citelne" formy
+    changes.forEach(function (item) {
+      changesMap[item.key] = item;
+      delete item.key;
+    });
+    
+    return changesMap;
   }
 
   // ?status=active&sorting.orderColumn=status&sorting.direction=ASC&dateSelect=week

@@ -50,3 +50,7 @@ table tfoot tr.total td > * {
 .pagination {
 	margin: 0;
 }
+
+.appPaginatorSelect {
+	display: none;
+}

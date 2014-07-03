@@ -41,10 +41,13 @@
     this.sums = [];
 
     // seznam poctu zaznamu na stranku
-    this.itemsPerCountList = [ 10, 20, 50, 100, 200, 500, 800, 1000 ];
+    this.itemsPerPageCountList = [ 10, 20, 50, 100, 200, 500, 800, 1000 ];
 
     // aktualne na stranku
-    this.itemsPerPage = config.defaultItemsPerPage || this.itemsPerCountList[0];
+    this.itemsPerPage = config.defaultItemsPerPage || this.itemsPerPageCountList[0];
+
+    // DEBUG: only for tests
+    this.itemsPerPageTemp = config.defaultItemsPerPage || this.itemsPerPageCountList[0];
 
     // priznak, zda jsou vybrany vsechny zaznamy v tabulce
     this.allItemsSelected = false;
@@ -62,7 +65,7 @@
     this.tempColumnsConfig = Utils.clone(this.columnsConfig);
 
     // nazev sloupce, podle ktereho se tridi
-    // bud z configu nebo se bere prvni sortovatelny
+    // bud z configu nebo se bere prvni
     this.order = config.defaultOrder || this._getFirstSortableColumn().id;
 
     // smer razeni
@@ -141,6 +144,11 @@
 
     // preskladani sloupcu
     this._reorderRowTemplate(this.columnsConfig);
+
+    // DEBUG: only for tests
+    ko.getObservable(this, 'itemsPerPageTemp').subscribe(function (value) {
+      this.setHashState('itemsPerPage', value);
+    }, this);
 
     // zaregistrovani zmeny hashe
     HashManager.registerStateChange(this.tableId, this.onHashStateChange.bind(this));
