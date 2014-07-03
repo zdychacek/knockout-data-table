@@ -21,7 +21,7 @@
     this._oldUrl = '';
 
     window.addEventListener('hashchange', function (e) {
-      this._onHashChange(this._oldUrl, document.location.href);
+      this._onHashChange(document.location.href);
     }.bind(this), false);
   }
 
@@ -53,7 +53,7 @@
 
   HashManager.prototype.init = function () {
     this._oldUrl = document.location.href;
-    this._onHashChange(document.location.href, document.location.href);
+    this._onHashChange(document.location.href);
   }
 
   HashManager.prototype.registerStateChange = function (key, cb) {
@@ -147,9 +147,9 @@
     document.location.hash = hash;
   }
 
-  HashManager.prototype._onHashChange = function (oldUrl, newUrl) {
+  HashManager.prototype._onHashChange = function (newUrl) {
     var newUrl = this._parseHashFragmentFromUrl(newUrl);
-    var oldUrl = this._parseHashFragmentFromUrl(oldUrl);
+    var oldUrl = this._parseHashFragmentFromUrl(this._oldUrl);
     var newState = this._parseFragment(newUrl);
 
     if (!this._silentChangeLock) {
@@ -170,7 +170,7 @@
       if (this._listeners.hasOwnProperty(key)) {
         var changes = this._collectKeyChanges(key, diff);
 
-        this._listeners[key](changes);
+        changes && this._listeners[key](changes);
       }
     }
   }
@@ -211,14 +211,20 @@
       }
     })(diff, key);
 
-    var map = {};
+    if (changes.length) {
+      var changesMap = {};
 
-    changes.forEach(function (item) {
-      map[item.key] = item;
-      delete item.key;
-    });
-
-    return map;
+      // transformace do "lepe citelne" formy
+      changes.forEach(function (item) {
+        changesMap[item.key] = item;
+        delete item.key;
+      });
+      
+      return changesMap;
+    }
+    else {
+      return null;
+    }
   }
 
   // ?status=active&sorting.orderColumn=status&sorting.direction=ASC&dateSelect=week
