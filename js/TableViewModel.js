@@ -483,7 +483,7 @@
     var orderValue = changes.order && changes.order.value;
     var directionValue = changes.direction && changes.direction.value;
 
-    console.log('TableViewModel#onHashStateChange:', changes);
+    //console.log('TableViewModel#onHashStateChange:', changes);
 
     if (pageValue) {
       if (changes.page.type == 'deleted') {
