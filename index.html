@@ -15,13 +15,9 @@
   <script src="/libs/knockout-sortable.js"></script>
   <script src="/libs/knockout-switch-case.min.js"></script>
   <script src="/js/extensions.js"></script>
-  
-  <!--script src="/bench/js/bench.js"></script>
-  <script src="/bench/js/app.js"></script-->
 </head>
 <body>
-
-  <div style="float: left; width: 60%">
+  <div class="conatiner-fluid">
     <h1>Seznam kampaní <small>— Knockout.js</small></h1>
 
     <div data-bind="template: 'tpl-pager'" class="row pager-cnt"></div>
@@ -53,7 +49,6 @@
         </tr>
       </thead>
       <tfoot>
-        <!--tr><td colspan="9"></td><tr-->
         <!-- ko foreach: sumRowsForTeplate -->
           <!-- ko template: { name: template, foreach: data, as: 'row' } --><!-- /ko  -->
         <!-- /ko -->
@@ -62,74 +57,70 @@
     </table>
 
     <div data-bind="template: 'tpl-pager'" class="row pager-cnt"></div>
-  </div>
 
-  <div class="left-pane">
-    <h1>Konfigurace</h1>
+    <div data-bind="visible: isConfigPaneVisible" class="config-pane" style="display: none">
+      <h1>Konfigurace <button data-bind="click: setNewConfig.bind($root)" class="btn btn-success appConfiguratorApply">Nastavit</button></h1>
 
-    <form class="form-horizontal" >
-      <div class="checkbox">
-        <label>
-          <input data-bind="checked: tempConfig.lazyRendering" type="checkbox" class="appConfiguratorLazy"> Použít lazy rendering
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label class="col-sm-5 control-label">Velikost dávky (počet řádků)</label>
-        <div class="col-sm-4">
-          <input data-bind="value: tempConfig.lazyRenderingBatchSize, disable: !tempConfig.lazyRendering" type="number" class="form-control appConfiguratorBatch">
+      <form class="form-horizontal" >
+        <div class="checkbox">
+          <label>
+            <input data-bind="checked: tempConfig.lazyRendering" type="checkbox" class="appConfiguratorLazy"> Použít lazy rendering
+          </label>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label class="col-sm-5 control-label">Prodleva mezi renderingem dávky (ms)</label>
-        <div class="col-sm-4">
-          <input data-bind="value: tempConfig.lazyRenderingBatchDelay, disable: !tempConfig.lazyRendering" type="number" class="form-control appConfiguratorDelay">
+        <div class="form-group">
+          <label class="col-sm-5 control-label">Velikost dávky</label>
+          <div class="col-sm-4">
+            <input data-bind="value: tempConfig.lazyRenderingBatchSize, disable: !tempConfig.lazyRendering" type="number" class="form-control appConfiguratorBatch">
+          </div>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label class="col-sm-5 control-label">Počet řádků na první dobrou</label>
-        <div class="col-sm-4">
-          <input data-bind="value: tempConfig.lazyRenderingInitialCount, disable: !tempConfig.lazyRendering" type="number" class="form-control appConfiguratorInitial">
+        <div class="form-group">
+          <label class="col-sm-5 control-label">Prodleva mezi renderingem dávky (ms)</label>
+          <div class="col-sm-4">
+            <input data-bind="value: tempConfig.lazyRenderingBatchDelay, disable: !tempConfig.lazyRendering" type="number" class="form-control appConfiguratorDelay">
+          </div>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label class="col-sm-5 control-label">Od kolika řádků se začne používat lazy rendering</label>
-        <div class="col-sm-4">
-          <input data-bind="value: tempConfig.lazyRenderingThreshold, disable: !tempConfig.lazyRendering" type="number" class="form-control appConfiguratorThreshold">
+        <div class="form-group">
+          <label class="col-sm-5 control-label">Počet řádků na první dobrou</label>
+          <div class="col-sm-4">
+            <input data-bind="value: tempConfig.lazyRenderingInitialCount, disable: !tempConfig.lazyRendering" type="number" class="form-control appConfiguratorInitial">
+          </div>
         </div>
-      </div>
 
-      <button data-bind="click: setNewConfig.bind($root)" class="btn btn-success appConfiguratorApply">Nastavit</button>
-    </form>
+        <div class="form-group">
+          <label class="col-sm-5 control-label">Od kolika řádků se začne používat lazy rendering</label>
+          <div class="col-sm-4">
+            <input data-bind="value: tempConfig.lazyRenderingThreshold, disable: !tempConfig.lazyRendering" type="number" class="form-control appConfiguratorThreshold">
+          </div>
+        </div>
+      </form>
 
-    <!-- columns shuffler -->
-    <div>
-      <h3>Sortování sloupců</h3>
-
+      <!-- columns shuffler -->
       <div>
-        <ul data-bind="sortable: { data: tempColumnsConfig, options: { axis: 'y' }}" class="list-group col-sorter">
-          <li  class="list-group-item">
-            <input type="checkbox" data-bind="checked: show"/>
-            <span data-bind="text: name"></span>
-          </li>
-        </ul>
+        <h3>Sortování sloupců <button data-bind="click: sortColumns.bind($root)" class="btn btn-success">Uložit</button></h3>
 
-        <button data-bind="click: sortColumns.bind($root)" class="btn btn-success">Uložit</button>
+        <div>
+          <ul data-bind="sortable: { data: tempColumnsConfig, options: { axis: 'y' }}" class="list-group col-sorter">
+            <li  class="list-group-item">
+              <input type="checkbox" data-bind="checked: show"/>
+              <span data-bind="text: name"></span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="status alert alert-warning appActivity" style="display:none"></div>
+    <div data-bind="visible: !isDataLoaded || !isRendered, text: systemStatus" class="status alert alert-warning appActivity" style="display:none"></div>
 
-  <div data-bind="visible: eventLog.length > 0" class="appLogger alert alert-success" style="display:none">
-    <ul data-bind="foreach: eventLog">
-      <li data-bind="html: $data"></li>
-    </ul>
-    <br/>
-    <button data-bind="click: function () { this.eventLog.removeAll() }" class="btn btn-danger appColumnSorterApply">Vymazat</button>
+    <div data-bind="visible: eventLog.length > 0" class="appLogger alert alert-success" style="display:none">
+      <ul data-bind="foreach: eventLog">
+        <li data-bind="html: $data"></li>
+      </ul>
+      <br/>
+      <button data-bind="click: function () { this.eventLog.removeAll() }" class="btn btn-danger appColumnSorterApply">Vymazat</button>
+    </div>    
   </div>
 
   <script src="/js/Utils.js"></script>

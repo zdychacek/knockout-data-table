@@ -1,6 +1,5 @@
 table {
-	margin-left: 40px;
-	width: 75%;
+	margin-left: 0;
 }
 
 table thead th a:hover {
@@ -11,10 +10,15 @@ table tfoot tr.total td > * {
 	font-weight: bold;
 }
 
-.left-pane {
-	width: 25%;
-	float:right;
-	margin-right: 30px;
+.config-pane {
+	padding: 10px;
+	width: 400px;
+	margin: 15px;
+	position: absolute;
+	top: 0;
+	right: 0;
+	background: #fff;
+	border: 1px solid #000;
 }
 
 .col-sorter li {
@@ -31,7 +35,6 @@ table tfoot tr.total td > * {
 	position: fixed;
 	bottom: 15px;
 	right: 15px;
-	/*display: none;*/
 }
 
 .appLogger ul {
@@ -47,10 +50,25 @@ table tfoot tr.total td > * {
 	padding-bottom: 15px;
 }
 
+.pager-cnt > * {
+	float: left;
+}
+
 .pagination {
 	margin: 0;
 }
 
 .appPaginatorSelect {
 	display: none;
+}
+.conatiner-fluid {
+	margin: 20px;
+}
+
+.btn-config {
+	margin-right: 20px;
+}
+
+.items-per-page {
+	margin-right: 20px;
 }

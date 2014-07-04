@@ -1,4 +1,4 @@
-connector.on('remote', function (SklikApi) {
+connector.connect(function (SklikApi) {
   'use strict';
 
   window.SklikApi = SklikApi;
@@ -39,7 +39,7 @@ connector.on('remote', function (SklikApi) {
       sumRowsTemplatesIds: 'tpl-table-sum-row',
       //defaultOrder: 'price',
       itemsSelectionOn: true,
-      defaultItemsPerPage: 50,
+      defaultItemsPerPage: 500,
       defaultDirection: TableViewModel.Direction.ASC,
       lazyRendering: true,
       columnsConfig: [

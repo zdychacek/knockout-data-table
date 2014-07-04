@@ -1,4 +1,6 @@
-<div class="btn-group col-md-1">
+<button data-bind="click: function () { $root.isConfigPaneVisible = !$root.isConfigPaneVisible }" class="btn btn-success btn-config">Konfigurovat</button>
+
+<div class="btn-group items-per-page">
 	<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
 	  <span data-bind="text: itemsPerPage"></span>
 	  <span class="caret"></span>
@@ -8,12 +10,10 @@
 	  	<a data-bind="text: $data, click: $root.setItemsPerPage.bind($root)" href="#"></a>
 	  </li>
 	</ul>
-
-	<select data-bind="options: itemsPerPageCountList, value: itemsPerPageTemp" class="appPaginatorSelect"></select>
 </div>
 
 <!-- strankovac -->
-<ul class="pagination col-md-10" data-bind="foreach: pager">
+<ul class="pagination" data-bind="foreach: pager">
   <li data-bind="css: { active: $data == $root.currentPage }">
     <a href="#" data-bind="click: $root.setPage.bind($root, $data), text: $data"></a>
   </li>

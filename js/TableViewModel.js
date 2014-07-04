@@ -11,8 +11,8 @@
     defaultDirection: Direction.ASC,
     itemsSelectionOn: true,
     lazyRendering: false,
-    lazyRenderingBatchSize: 10,
-    lazyRenderingBatchDelay: 100,
+    lazyRenderingBatchSize: 12,
+    lazyRenderingBatchDelay: 25,
     lazyRenderingInitialCount: 30,
     lazyRenderingThreshold: 100
   };
@@ -103,6 +103,8 @@
 
     // DEBUG:
     this.eventLog = [];
+
+    this.isConfigPaneVisible = false;
 
     this.tempConfig = {
       lazyRendering: this.lazyRendering,
